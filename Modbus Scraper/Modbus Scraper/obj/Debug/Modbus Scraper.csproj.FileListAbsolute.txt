@@ -1,0 +1,25 @@
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\bin\Debug\Modbus Scraper.exe.config
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\bin\Debug\Modbus Scraper.exe
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\bin\Debug\Modbus Scraper.pdb
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\bin\Debug\EasyModbus.dll
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.AssemblyReference.cache
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.SuggestedBindingRedirects.cache
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus_Scraper.Form1.resources
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus_Scraper.Properties.Resources.resources
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.GenerateResource.cache
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.CoreCompileInputs.cache
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.CopyComplete
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.exe
+C:\Users\Joshua\Desktop\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\bin\Debug\Modbus Scraper.exe.config
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\bin\Debug\Modbus Scraper.exe
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\bin\Debug\Modbus Scraper.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.AssemblyReference.cache
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.SuggestedBindingRedirects.cache
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus_Scraper.Form1.resources
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus_Scraper.Properties.Resources.resources
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.GenerateResource.cache
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.CoreCompileInputs.cache
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.csproj.CopyComplete
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.exe
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Debug\Modbus Scraper.pdb
