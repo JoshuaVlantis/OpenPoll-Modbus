@@ -74,28 +74,31 @@ namespace Modbus_Scraper
             int index1 = startingreg;
             int amount = Decimal.ToInt32(num.Value);
             arrsize = 0;
-            for (int x = 0; x + startingreg < startingreg + num.Value; x++)
+            if (modbusClient.Connected)
             {
-                try
+                for (int x = 0; x + startingreg < startingreg + num.Value; x++)
                 {
-                    readHoldingRegisters = modbusClient.ReadHoldingRegisters(startingreg + x, 1);
-                    HoldingRegisters[pos] = index1 + "   :  " + readHoldingRegisters[0].ToString();
-                    arrsize++;
+                    try
+                    {
+                        readHoldingRegisters = modbusClient.ReadHoldingRegisters(startingreg + x, 1);
+                        HoldingRegisters[pos] = index1 + "   :  " + readHoldingRegisters[0].ToString();
+                        arrsize++;
 
-                }
-                catch (System.IO.IOException)
-                {
-                    MessageBox.Show("Node ID Doesnt Exist");
-                    break;
-                }
-                catch { }
-                index1++;
-                pos++;
+                    }
+                    catch (System.IO.IOException)
+                    {
+                        MessageBox.Show("Node ID Doesnt Exist");
+                        break;
+                    }
+                    catch { }
+                    index1++;
+                    pos++;
 
-                int OldRange = (amount - 0);
-                int NewRange = (100 - 0);
-                int NewValue = (((x - 0) * NewRange) / OldRange) + 0;
-                pBar.Value = NewValue;
+                    int OldRange = (amount - 0);
+                    int NewRange = (100 - 0);
+                    int NewValue = (((x - 0) * NewRange) / OldRange) + 0;
+                    pBar.Value = NewValue;
+                }
             }
             modbusClient.Disconnect();                                                //Disconnect from Server
             pBar.Hide();
@@ -165,51 +168,59 @@ namespace Modbus_Scraper
                                                                                          //for(int i = num1; i < num2; i++)
 
             lblwait.Show();
-
-            modbusClient.Connect();                                                    //Connect to Server
+            try
+            {
+                modbusClient.Connect();                                                    //Connect to Server
+            }
+            catch
+            {
+                MessageBox.Show("No Modbus Server Found");
+            }
 
             pBar.Show();
-
-            for (int i = num1; i < num2; i++)
+            if (modbusClient.Connected)
             {
-                pBar.Minimum = 0;
-                pBar.Maximum = 100;
-
-                try
+                for (int i = num1; i < num2; i++)
                 {
-                    byte[] slave = BitConverter.GetBytes(i);
-                    modbusClient.UnitIdentifier = slave[0];
-                    int[] readHoldingRegisters = modbusClient.ReadHoldingRegisters(0, 10);    //Read 10 Holding Registers from Server, starting with Address 1
-                    ids[index] = i;
-                    richedit2.AppendText("Node ID : "+ids[index] + "\r\n");
-                    index++;
-                    if (brkbox.Checked)
+                    pBar.Minimum = 0;
+                    pBar.Maximum = 100;
+
+                    try
                     {
-                        break;
+                        byte[] slave = BitConverter.GetBytes(i);
+                        modbusClient.UnitIdentifier = slave[0];
+                        int[] readHoldingRegisters = modbusClient.ReadHoldingRegisters(0, 10);    //Read 10 Holding Registers from Server, starting with Address 1
+                        ids[index] = i;
+                        richedit2.AppendText("Node ID : " + ids[index] + "\r\n");
+                        index++;
+                        if (brkbox.Checked)
+                        {
+                            break;
+                        }
                     }
-                }
-                catch (System.IO.IOException)
-                {
-                    //Node ID doesnt exist 
-                }
-                catch
-                {
-                    //Node ID exists but Registers could not be found
-                    ids[index] = i;
-                    richedit2.AppendText(ids[index] + "\r\n");
-                    index++;
-                    if (brkbox.Checked)
+                    catch (System.IO.IOException)
                     {
-                        break;
+                        //Node ID doesnt exist 
                     }
+                    catch
+                    {
+                        //Node ID exists but Registers could not be found
+                        ids[index] = i;
+                        richedit2.AppendText(ids[index] + "\r\n");
+                        index++;
+                        if (brkbox.Checked)
+                        {
+                            break;
+                        }
+
+                    }
+                    int OldRange = (num2 - num1);
+                    int NewRange = (100 - 0);
+                    int NewValue = (((i - 0) * NewRange) / OldRange) + 0;
+                    pBar.Value = NewValue;
+
 
                 }
-                int OldRange = (num2 - num1);
-                int NewRange = (100 - 0);
-                int NewValue = (((i - 0) * NewRange) / OldRange) + 0;
-                pBar.Value = NewValue;
-
-
             }
             pBar.Value = 0;
             pBar.Hide();
