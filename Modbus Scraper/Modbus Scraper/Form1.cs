@@ -426,6 +426,8 @@ namespace Modbus_Scraper
                 label3.Text = "Ending ID";
                 label5.Text = "Break Once Found";
                 showextrm.Checked = true;
+                slaveid.Hide();
+                label6.Hide();
             }
             else
             {
@@ -435,6 +437,8 @@ namespace Modbus_Scraper
                 label3.Text = "Amount";
                 label5.Text = "Show Extremes";
                 showextrm.Checked = true;
+                slaveid.Show();
+                label6.Show();
             }
         }
 
