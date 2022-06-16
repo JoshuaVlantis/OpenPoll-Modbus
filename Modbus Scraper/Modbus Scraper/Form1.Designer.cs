@@ -55,12 +55,17 @@
             this.richedit2 = new System.Windows.Forms.RichTextBox();
             this.lblwait = new System.Windows.Forms.Label();
             this.pBar = new System.Windows.Forms.ProgressBar();
-            this.button4 = new System.Windows.Forms.Button();
+            this.SearchNode = new System.Windows.Forms.Button();
             this.brkbox = new System.Windows.Forms.CheckBox();
             this.label11 = new System.Windows.Forms.Label();
             this.showextrm = new System.Windows.Forms.CheckBox();
+            this.connectiontimeout = new System.Windows.Forms.NumericUpDown();
+            this.label12 = new System.Windows.Forms.Label();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.label13 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.num)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.startreg)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.connectiontimeout)).BeginInit();
             this.SuspendLayout();
             // 
             // save
@@ -75,7 +80,7 @@
             // 
             // port
             // 
-            this.port.Location = new System.Drawing.Point(173, 45);
+            this.port.Location = new System.Drawing.Point(173, 29);
             this.port.Name = "port";
             this.port.Size = new System.Drawing.Size(41, 20);
             this.port.TabIndex = 12;
@@ -84,7 +89,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(170, 29);
+            this.label2.Location = new System.Drawing.Point(170, 14);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(26, 13);
             this.label2.TabIndex = 11;
@@ -93,7 +98,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(41, 29);
+            this.label1.Location = new System.Drawing.Point(41, 14);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(58, 13);
             this.label1.TabIndex = 10;
@@ -101,7 +106,7 @@
             // 
             // ipadd
             // 
-            this.ipadd.Location = new System.Drawing.Point(44, 45);
+            this.ipadd.Location = new System.Drawing.Point(44, 29);
             this.ipadd.Name = "ipadd";
             this.ipadd.Size = new System.Drawing.Size(123, 20);
             this.ipadd.TabIndex = 9;
@@ -137,7 +142,7 @@
             // 
             // num
             // 
-            this.num.Location = new System.Drawing.Point(155, 98);
+            this.num.Location = new System.Drawing.Point(155, 76);
             this.num.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -160,7 +165,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(156, 78);
+            this.label3.Location = new System.Drawing.Point(156, 61);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(43, 13);
             this.label3.TabIndex = 17;
@@ -168,7 +173,7 @@
             // 
             // startreg
             // 
-            this.startreg.Location = new System.Drawing.Point(44, 98);
+            this.startreg.Location = new System.Drawing.Point(44, 76);
             this.startreg.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -181,7 +186,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(41, 82);
+            this.label4.Location = new System.Drawing.Point(41, 61);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(85, 13);
             this.label4.TabIndex = 19;
@@ -190,7 +195,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(276, 29);
+            this.label5.Location = new System.Drawing.Point(276, 7);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(80, 13);
             this.label5.TabIndex = 22;
@@ -198,7 +203,7 @@
             // 
             // slaveid
             // 
-            this.slaveid.Location = new System.Drawing.Point(220, 45);
+            this.slaveid.Location = new System.Drawing.Point(220, 29);
             this.slaveid.Name = "slaveid";
             this.slaveid.Size = new System.Drawing.Size(41, 20);
             this.slaveid.TabIndex = 27;
@@ -207,7 +212,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(217, 29);
+            this.label6.Location = new System.Drawing.Point(217, 14);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(18, 13);
             this.label6.TabIndex = 26;
@@ -270,7 +275,7 @@
             this.id2.Name = "id2";
             this.id2.Size = new System.Drawing.Size(41, 20);
             this.id2.TabIndex = 34;
-            this.id2.Text = "10";
+            this.id2.Text = "255";
             // 
             // label10
             // 
@@ -309,15 +314,15 @@
             this.pBar.TabIndex = 37;
             this.pBar.Visible = false;
             // 
-            // button4
+            // SearchNode
             // 
-            this.button4.Location = new System.Drawing.Point(437, 388);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.TabIndex = 39;
-            this.button4.Text = "Search";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
+            this.SearchNode.Location = new System.Drawing.Point(437, 388);
+            this.SearchNode.Name = "SearchNode";
+            this.SearchNode.Size = new System.Drawing.Size(75, 23);
+            this.SearchNode.TabIndex = 39;
+            this.SearchNode.Text = "Search";
+            this.SearchNode.UseVisualStyleBackColor = true;
+            this.SearchNode.Click += new System.EventHandler(this.button4_Click);
             // 
             // brkbox
             // 
@@ -345,12 +350,60 @@
             this.showextrm.AutoSize = true;
             this.showextrm.Checked = true;
             this.showextrm.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.showextrm.Location = new System.Drawing.Point(279, 48);
+            this.showextrm.Location = new System.Drawing.Point(279, 31);
             this.showextrm.Name = "showextrm";
             this.showextrm.Size = new System.Drawing.Size(44, 17);
             this.showextrm.TabIndex = 44;
             this.showextrm.Text = "Yes";
             this.showextrm.UseVisualStyleBackColor = true;
+            // 
+            // connectiontimeout
+            // 
+            this.connectiontimeout.Location = new System.Drawing.Point(266, 76);
+            this.connectiontimeout.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.connectiontimeout.Name = "connectiontimeout";
+            this.connectiontimeout.Size = new System.Drawing.Size(120, 20);
+            this.connectiontimeout.TabIndex = 45;
+            this.connectiontimeout.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(274, 60);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(102, 13);
+            this.label12.TabIndex = 46;
+            this.label12.Text = "Connection Timeout";
+            // 
+            // comboBox1
+            // 
+            this.comboBox1.FormattingEnabled = true;
+            this.comboBox1.Items.AddRange(new object[] {
+            "01 Coil Status (0x)",
+            "02 Input Status (1x)",
+            "03 Holding Register (4x)",
+            "04 Input Registers (3x)"});
+            this.comboBox1.Location = new System.Drawing.Point(101, 108);
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.Size = new System.Drawing.Size(225, 21);
+            this.comboBox1.TabIndex = 47;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(43, 111);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(54, 13);
+            this.label13.TabIndex = 48;
+            this.label13.Text = "Function :";
             // 
             // Form1
             // 
@@ -358,10 +411,14 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.ClientSize = new System.Drawing.Size(770, 460);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.comboBox1);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.connectiontimeout);
             this.Controls.Add(this.showextrm);
             this.Controls.Add(this.label11);
             this.Controls.Add(this.brkbox);
-            this.Controls.Add(this.button4);
+            this.Controls.Add(this.SearchNode);
             this.Controls.Add(this.lblwait);
             this.Controls.Add(this.pBar);
             this.Controls.Add(this.richedit2);
@@ -392,8 +449,10 @@
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Modbus Scraper";
+            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.num)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.startreg)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.connectiontimeout)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -427,10 +486,14 @@
         private System.Windows.Forms.RichTextBox richedit2;
         private System.Windows.Forms.Label lblwait;
         private System.Windows.Forms.ProgressBar pBar;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button SearchNode;
         private System.Windows.Forms.CheckBox brkbox;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.CheckBox showextrm;
+        private System.Windows.Forms.NumericUpDown connectiontimeout;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label13;
     }
 }
 
