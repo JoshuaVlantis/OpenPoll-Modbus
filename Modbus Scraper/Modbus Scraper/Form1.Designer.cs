@@ -50,6 +50,7 @@
             this.label12 = new System.Windows.Forms.Label();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.label13 = new System.Windows.Forms.Label();
+            this.bStop = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.num)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.startreg)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.connectiontimeout)).BeginInit();
@@ -57,6 +58,7 @@
             // 
             // save
             // 
+            this.save.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.save.Location = new System.Drawing.Point(283, 416);
             this.save.Name = "save";
             this.save.Size = new System.Drawing.Size(75, 23);
@@ -109,6 +111,7 @@
             // 
             // button1
             // 
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button1.Location = new System.Drawing.Point(21, 416);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
@@ -278,12 +281,24 @@
             this.label13.TabIndex = 48;
             this.label13.Text = "Function";
             // 
+            // bStop
+            // 
+            this.bStop.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.bStop.Location = new System.Drawing.Point(155, 416);
+            this.bStop.Name = "bStop";
+            this.bStop.Size = new System.Drawing.Size(75, 23);
+            this.bStop.TabIndex = 49;
+            this.bStop.Text = "Stop";
+            this.bStop.UseVisualStyleBackColor = true;
+            this.bStop.Click += new System.EventHandler(this.Stop_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.ClientSize = new System.Drawing.Size(384, 449);
+            this.Controls.Add(this.bStop);
             this.Controls.Add(this.label13);
             this.Controls.Add(this.comboBox1);
             this.Controls.Add(this.label12);
@@ -342,6 +357,7 @@
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Button bStop;
     }
 }
 
