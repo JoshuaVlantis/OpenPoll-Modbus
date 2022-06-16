@@ -7,5 +7,3 @@ This tool can also find Multiple Node IDs of Modbus Servers on an IP Address.
 
 TODO:
 Fix Bug that causes windows to think the program is hanging while do larger searches #Single Thread Bug
-
-Add Support For all modbus Registers not just Holding Registers
