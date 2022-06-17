@@ -10,6 +10,11 @@ I am planning to allow users to select there own location in the next release
 
 *The tool is still in early versions so there maybe some bugs or issues.*
 
+*There is still alot of work to be done in terms of code clean up and optimzing searches.
+All this will be done in future releases.
+Any sort of feedback/advice will be much appreciated.
+Any features you might want added or supported will be looked at*
+
 ![SearchHold1](https://user-images.githubusercontent.com/70960513/174270255-8ffa8723-90e2-4a99-a0b4-f1e277e2695f.png)
 
 ![NodeID Search](https://user-images.githubusercontent.com/70960513/174270226-a4923e02-8a58-424b-898c-aad6be293f53.png)
