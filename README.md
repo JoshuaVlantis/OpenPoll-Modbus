@@ -10,7 +10,7 @@ I am planning to allow users to select there own location in the next release
 
 *The tool is still in early versions so there maybe some bugs or issues.*
 
-*There is still alot of work to be done in terms of code clean up and optimzing searches.
+*There is still alot of work to be done in terms of code clean up and optimizing searches.
 All this will be done in future releases.
 Any sort of feedback/advice will be much appreciated.
 Any features you might want added or supported will be looked at*
