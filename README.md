@@ -5,6 +5,9 @@
 
 -This tool can also find what node IDs are being used on the Modbus Server.
 
+Current save location Temp\log.txt
+I am planning to allow users to select there own location in the next release
+
 *The tool is still in early versions so there maybe some bugs or issues.*
 
 ![SearchHold1](https://user-images.githubusercontent.com/70960513/174270255-8ffa8723-90e2-4a99-a0b4-f1e277e2695f.png)
