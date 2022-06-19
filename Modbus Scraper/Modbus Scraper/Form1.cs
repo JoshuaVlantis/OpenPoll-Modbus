@@ -194,7 +194,7 @@ namespace Modbus_Scraper
 
                             for (int j = 0; j < readregisteramount; j++)
                             {
-                                if (x + startingreg < num.Value)
+                                if (x + startingreg < num.Value + startingreg)
                                 {
                                     index1 = x + startingreg;
 
@@ -225,7 +225,7 @@ namespace Modbus_Scraper
                                     //index1 = x;
                                 }
                             }
-                            if (x + startingreg < num.Value)
+                            if (x + startingreg < num.Value + startingreg)
                             {
                                 x--;
                             }
@@ -263,6 +263,7 @@ namespace Modbus_Scraper
                         }
                         catch { }
                     }
+                    //Thread.Sleep(10);
                 }
             }
             modbusClient.Disconnect(); //Disconnect from Server
@@ -446,8 +447,15 @@ namespace Modbus_Scraper
         {
             if (comboBox1.SelectedIndex != 4)
             {
-                display();
+                Thread tid3 = new Thread(new ThreadStart(Thread3));
+                tid3.IsBackground = true;
+                tid3.Start();
             }
+        }
+
+        public void Thread3()
+        {
+            display();
         }
 
         private void Stop_Click(object sender, EventArgs e)
