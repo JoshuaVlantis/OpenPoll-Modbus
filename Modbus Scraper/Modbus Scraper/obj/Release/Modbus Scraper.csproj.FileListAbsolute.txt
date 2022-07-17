@@ -1,6 +1,0 @@
-C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Release\Modbus Scraper.csproj.AssemblyReference.cache
-C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Release\Modbus Scraper.csproj.SuggestedBindingRedirects.cache
-C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Release\Modbus_Scraper.Form1.resources
-C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Release\Modbus_Scraper.Properties.Resources.resources
-C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Release\Modbus Scraper.csproj.GenerateResource.cache
-C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\Modbus Scraper\Modbus Scraper\obj\Release\Modbus Scraper.csproj.CoreCompileInputs.cache

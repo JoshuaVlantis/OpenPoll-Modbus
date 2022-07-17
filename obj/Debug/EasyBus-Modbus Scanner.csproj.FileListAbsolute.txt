@@ -1,0 +1,30 @@
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\bin\Debug\EasyBus-Modbus Scanner.exe.config
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\bin\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\bin\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.AssemblyReference.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.SuggestedBindingRedirects.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus_Modbus_Scanner.Properties.Resources.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.GenerateResource.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.CoreCompileInputs.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\bin\Debug\EasyModbus.dll
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus_Modbus_Scanner.Home.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus Scanner\obj\Debug\EasyBus_Modbus_Scanner.ConnectionSetup.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\bin\Debug\EasyBus-Modbus Scanner.exe.config
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\bin\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\bin\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\bin\Debug\EasyModbus.dll
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.AssemblyReference.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.SuggestedBindingRedirects.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus_Modbus_Scanner.ConnectionSetup.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus_Modbus_Scanner.Home.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus_Modbus_Scanner.Properties.Resources.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.GenerateResource.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.CoreCompileInputs.cache
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus_Modbus_Scanner.ModbusScraper.resources
+C:\Users\Joshua\Documents\GitHub\EasyBus-Modbus-Scanner\obj\Debug\EasyBus_Modbus_Scanner.Setup.resources

@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "07982b7d-014b-47db-89bf-391a2d4fb320": {
+      "ProjectGuid": "07982b7d-014b-47db-89bf-391a2d4fb320",
+      "DisplayName": "EasyBus-Modbus Scanner",
+      "ColorIndex": 0
+    }
+  },
+  "NextColorIndex": 1
+}
