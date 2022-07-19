@@ -84,7 +84,8 @@
             "02 Input Status (1x)",
             "03 Holding Register (4x)",
             "04 Input Registers (3x)",
-            "Seach Node IDs"});
+            "Seach Node IDs",
+            "Search For Modbus Devices"});
             this.comboBox1.Location = new System.Drawing.Point(15, 121);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(338, 21);

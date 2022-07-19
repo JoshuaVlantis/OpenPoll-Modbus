@@ -48,11 +48,11 @@ namespace EasyBus_Modbus_Scanner
         {
             stop = false;
             bStop.Show();
-            if (comboBox1.SelectedIndex == 4)
+            if (comboBox1.SelectedIndex == 4 || comboBox1.SelectedIndex == 5)
             {
                 Threadcall2();
             }
-            else
+            else if (comboBox1.SelectedIndex == 0 || comboBox1.SelectedIndex == 1 || comboBox1.SelectedIndex == 2 || comboBox1.SelectedIndex == 3)
             {
                 Threadcall1();
             }
@@ -101,12 +101,21 @@ namespace EasyBus_Modbus_Scanner
         public void Thread1()
         {
             Search();
+
             Threadcall1();
         }
 
         public void Thread2()
         {
-            SearchID();
+            
+            if (comboBox1.SelectedIndex == 4)
+            {
+                SearchID();
+            }
+            else if (comboBox1.SelectedIndex == 5)
+            {
+                SearchIP();
+            }
             Threadcall2();
         }
 
@@ -360,6 +369,82 @@ namespace EasyBus_Modbus_Scanner
             modbusClient.Disconnect(); //Disconnect from Server
         }
 
+        void SearchIP()
+        {
+            richedit.Clear();
+            int portnum = Int32.Parse(port.Text);
+            //int num1 = Int32.Parse(startreg.Text);
+            //int num2 = int.Parse(num.Text);
+            int[] ids = new int[10000];
+            int index = 0;
+
+            //Start at back of ipadd and remove characters until dot is found
+            string ip = ipadd.Text;
+            int x = ip.Length - 1;
+            while (ip[x] != '.')
+            {
+                //Remove character from back of ip
+                ip = ip.Remove(x, 1);
+
+                x--;
+            }
+            pBar.Show();
+            for (int i = 1; i < 255; i++)
+            {
+                if (stop)
+                {
+                    break;
+                }
+                //Add i to ip
+                ip = ip + i.ToString();
+
+                ModbusClient modbusClient = new ModbusClient(ip, portnum); //Ip-Address and Port of Modbus-TCP-Server
+
+                modbusClient.ConnectionTimeout = Convert.ToInt32(connectiontimeout.Value);
+
+                lblwait.Show();
+                try
+                {
+                    modbusClient.Connect(); //Connect to Server
+                }
+                catch
+                {
+                    //MessageBox.Show("No Modbus Server Found");
+                }
+                
+                if (modbusClient.Connected)
+                {
+                    //Add ip to rich text
+                    richedit.AppendText("IP Address : " + ip + "\r\n");
+                }
+
+                int OldRange = (255 - 1);
+                int NewRange = (100 - 0);
+                int NewValue = (((i - 0) * NewRange) / OldRange) + 0;
+                try
+                {
+                    pBar.Value = NewValue;
+                }
+                catch { }
+
+                modbusClient.Disconnect(); //Disconnect from Server
+                int j = ip.Length - 1;
+                
+                while (ip[j] != '.')
+                {
+                    //Remove character from back of ip
+                    ip = ip.Remove(j, 1);
+
+                    j--;
+                }
+
+            }
+            pBar.Value = 0;
+            pBar.Hide();
+            lblwait.Hide();
+        }
+
+
         private void save_Click(object sender, EventArgs e)
         {
             string fileName = @"C:\Windows\Temp\log.txt";
@@ -429,6 +514,16 @@ namespace EasyBus_Modbus_Scanner
         {
             if (comboBox1.SelectedIndex == 4)
             {
+                label6.Visible = true;
+                slaveid.Visible = true;
+                label12.Visible = true;
+                connectiontimeout.Visible = true;
+                label5.Visible = true;
+                showextrm.Visible = true;
+                label4.Visible = true;
+                startreg.Visible = true;
+                label3.Visible = true;
+                num.Visible = true;
                 num.Value = 255;
                 startreg.Value = 1;
                 label4.Text = "Starting ID";
@@ -437,9 +532,21 @@ namespace EasyBus_Modbus_Scanner
                 showextrm.Checked = true;
                 slaveid.Hide();
                 label6.Hide();
+                label1.Text = "IP Address";
+                
             }
-            else
+            else if (comboBox1.SelectedIndex == 0 || comboBox1.SelectedIndex == 1 || comboBox1.SelectedIndex == 2 || comboBox1.SelectedIndex == 3)
             {
+                label6.Visible = true;
+                slaveid.Visible = true;
+                label12.Visible = true;
+                connectiontimeout.Visible = true;
+                label5.Visible = true;
+                showextrm.Visible = true;
+                label4.Visible = true;
+                startreg.Visible = true;
+                label3.Visible = true;
+                num.Visible = true;
                 num.Value = 100;
                 startreg.Value = 0;
                 label4.Text = "Starting Register";
@@ -448,6 +555,27 @@ namespace EasyBus_Modbus_Scanner
                 showextrm.Checked = true;
                 slaveid.Show();
                 label6.Show();
+                label1.Text = "IP Address";
+            }
+            else if (comboBox1.SelectedIndex == 5)
+            {
+
+                label12.Visible = false;
+                connectiontimeout.Visible = false;
+                label5.Visible = false;
+                showextrm.Visible = false;
+                label4.Visible = false;
+                startreg.Visible = false;
+                label3.Visible = false;
+                num.Visible = false;
+                startreg.Value = 0;
+                label4.Text = "Starting Register";
+                label3.Text = "Amount";
+                label5.Text = "Show Extremes";
+                showextrm.Checked = true;
+                slaveid.Hide();
+                label6.Hide();
+                label1.Text = "IP Range eg: 192.168.0.0";
             }
         }
 
