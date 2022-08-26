@@ -327,7 +327,9 @@ namespace EasyBus_Modbus_Scanner
                         {
                             byte[] slave = BitConverter.GetBytes(i);
                             modbusClient.UnitIdentifier = slave[0];
+
                             int[] readHoldingRegisters = modbusClient.ReadHoldingRegisters(0, 10); //Read 10 Holding Registers from Server, starting with Address 1
+
                             ids[index] = i;
                             richedit.AppendText("Node ID : " + ids[index] + "\r\n");
                             index++;
@@ -336,11 +338,7 @@ namespace EasyBus_Modbus_Scanner
                                 break;
                             }
                         }
-                        catch (System.IO.IOException)
-                        {
-                            //Node ID doesnt exist
-                        }
-                        catch
+                        catch (EasyModbus.Exceptions.StartingAddressInvalidException)
                         {
                             //Node ID exists but Registers could not be found
                             ids[index] = i;
@@ -351,6 +349,11 @@ namespace EasyBus_Modbus_Scanner
                                 break;
                             }
                         }
+                        catch
+                        {
+                            //Node ID doesnt exist
+                        }
+
                         int OldRange = (num2 - num1);
                         int NewRange = (100 - 0);
                         int NewValue = (((i - 0) * NewRange) / OldRange) + 0;
