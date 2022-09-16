@@ -31,9 +31,10 @@ namespace EasyBus_Modbus_Scanner
         ulong PollCount;
         int oldstartingregsize;
         ModbusClient modbusClient = new ModbusClient(Properties.Settings.Default.IPAddress, Properties.Settings.Default.ServerPort); //Ip-Address and Port of Modbus-TCP-Server
-        
+
         public Home()
         {
+
             InitializeComponent();
             bConnect.Enabled = true;
             bStop.Enabled = false;
@@ -51,7 +52,9 @@ namespace EasyBus_Modbus_Scanner
         }        
         public void Connect()
         {
-            
+            modbusClient.IPAddress = Properties.Settings.Default.IPAddress;
+            modbusClient.Port = Properties.Settings.Default.ServerPort;
+
             polltimer.Interval = Properties.Settings.Default.PollingRate;
             int islave = Properties.Settings.Default.NodeID;
             byte[] slave = BitConverter.GetBytes(1);
@@ -122,6 +125,9 @@ namespace EasyBus_Modbus_Scanner
         //Poll Modbus to keep it up to date
         public void PollModbus()
         {
+            modbusClient.IPAddress = Properties.Settings.Default.IPAddress;
+            modbusClient.Port = Properties.Settings.Default.ServerPort;
+
             polltimer.Interval = Properties.Settings.Default.PollingRate;
             int loopcount = 0;
             int oldloopcount = 0;
@@ -130,8 +136,6 @@ namespace EasyBus_Modbus_Scanner
 
             modbusClient.UnitIdentifier = slave[0];
             modbusClient.ConnectionTimeout = Properties.Settings.Default.ConnectionTimeOut;
-
-
 
             try
             {
