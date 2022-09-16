@@ -43,11 +43,11 @@
             this.tPollCount = new System.Windows.Forms.Label();
             this.pTx = new System.Windows.Forms.PictureBox();
             this.DataGrid = new System.Windows.Forms.DataGridView();
-            this.errorbox = new System.Windows.Forms.Label();
-            this.GCcall = new System.Windows.Forms.Timer(this.components);
             this.DataGridNumber = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DataGridName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.DataGridData = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.errorbox = new System.Windows.Forms.Label();
+            this.GCcall = new System.Windows.Forms.Timer(this.components);
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pTx)).BeginInit();
@@ -128,7 +128,7 @@
             this.bConnect.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.bConnect.Name = "bConnect";
             this.bConnect.Size = new System.Drawing.Size(23, 22);
-            this.bConnect.Text = "toolStripButton1";
+            this.bConnect.Text = "Connect";
             this.bConnect.Click += new System.EventHandler(this.toolStripButton1_Click);
             // 
             // bStop
@@ -138,7 +138,7 @@
             this.bStop.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.bStop.Name = "bStop";
             this.bStop.Size = new System.Drawing.Size(23, 22);
-            this.bStop.Text = "toolStripButton1";
+            this.bStop.Text = "Disconnect";
             this.bStop.Click += new System.EventHandler(this.bStop_Click);
             // 
             // polltimer
@@ -183,24 +183,8 @@
             this.DataGrid.Name = "DataGrid";
             this.DataGrid.Size = new System.Drawing.Size(514, 383);
             this.DataGrid.TabIndex = 1;
-            this.DataGrid.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGrid_CellContentClick);
             this.DataGrid.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGrid_CellEndEdit);
             this.DataGrid.MouseClick += new System.Windows.Forms.MouseEventHandler(this.DataGrid_MouseClick);
-            // 
-            // errorbox
-            // 
-            this.errorbox.AutoSize = true;
-            this.errorbox.Location = new System.Drawing.Point(2, 52);
-            this.errorbox.Name = "errorbox";
-            this.errorbox.Size = new System.Drawing.Size(33, 13);
-            this.errorbox.TabIndex = 9;
-            this.errorbox.Text = "Label";
-            // 
-            // GCcall
-            // 
-            this.GCcall.Enabled = true;
-            this.GCcall.Interval = 5000;
-            this.GCcall.Tick += new System.EventHandler(this.GCcall_Tick);
             // 
             // DataGridNumber
             // 
@@ -224,6 +208,21 @@
             this.DataGridData.Name = "DataGridData";
             this.DataGridData.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             this.DataGridData.Width = 36;
+            // 
+            // errorbox
+            // 
+            this.errorbox.AutoSize = true;
+            this.errorbox.Location = new System.Drawing.Point(2, 52);
+            this.errorbox.Name = "errorbox";
+            this.errorbox.Size = new System.Drawing.Size(33, 13);
+            this.errorbox.TabIndex = 9;
+            this.errorbox.Text = "Label";
+            // 
+            // GCcall
+            // 
+            this.GCcall.Enabled = true;
+            this.GCcall.Interval = 5000;
+            this.GCcall.Tick += new System.EventHandler(this.GCcall_Tick);
             // 
             // Home
             // 

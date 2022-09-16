@@ -164,7 +164,7 @@ namespace EasyBus_Modbus_Scanner
             bool[] readCoils = new bool[10000];
             bool[] readinputs = new bool[10000];
             int[] readHoldingRegisters = new int[10000];
-            int[] readInputStatus = new int[1000];
+            int[] readInputStatus = new int[10000];
 
             int startingreg = Decimal.ToInt32(startreg.Value);
             int pos = 0;
@@ -261,12 +261,12 @@ namespace EasyBus_Modbus_Scanner
                             if (readregisteramount == 10)
                             {
                                 readregisteramount = 1;
-                                x = x - 1;
+                                x--;
                             }
                             else if (readregisteramount > 10)
                             {
                                 readregisteramount = readregisteramount - 10;
-                                x = x - 1;
+                                x--;
                             }
                         }
                         catch { }
@@ -480,6 +480,7 @@ namespace EasyBus_Modbus_Scanner
         void display()
         {
             richedit.Clear();
+            var sb = new StringBuilder();
             for (int i = 0; i < arrsize; i++)
             {
                 if (!showextrm.Checked)
@@ -493,14 +494,15 @@ namespace EasyBus_Modbus_Scanner
                     }
                     else
                     {
-                        richedit.AppendText(HoldingRegisters[i] + "\n");
+                        sb.Append(HoldingRegisters[i] + "\n");
                     }
                 }
                 else
                 {
-                    richedit.AppendText(HoldingRegisters[i] + "\n");
+                    sb.Append(HoldingRegisters[i] + "\n");
                 }
             }
+            richedit.Text += sb.ToString();
             bStop.Hide();
         }
 
