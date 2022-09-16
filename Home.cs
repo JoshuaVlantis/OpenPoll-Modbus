@@ -130,20 +130,23 @@ namespace EasyBus_Modbus_Scanner
 
             modbusClient.UnitIdentifier = slave[0];
             modbusClient.ConnectionTimeout = Properties.Settings.Default.ConnectionTimeOut;
-            
+
+
+
             try
             {
+
+                if (!modbusClient.Connected) //If not connected try connect
+                {
+                    Connect();
+                }
+
                 if (oldstartingregsize != Properties.Settings.Default.Address)
                 {   
                     Array.Clear(DataType, 0, DataType.Length);
                 }
                 
                 oldstartingregsize = Properties.Settings.Default.Address;
-                
-                if (!modbusClient.Connected) //If not connected try connect
-                {
-                    modbusClient.Connect(); //Connect to Server
-                }
                 
                 oldloopcount = Registers.Length;
                 
@@ -177,6 +180,7 @@ namespace EasyBus_Modbus_Scanner
             catch
             {
                 errorbox.Text = "Timeout";
+                Connect();
             }
             if (modbusClient.Connected)
             {
