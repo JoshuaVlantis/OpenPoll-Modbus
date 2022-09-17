@@ -150,7 +150,7 @@
             // 
             this.tPollCount.AutoSize = true;
             this.tPollCount.BackColor = System.Drawing.SystemColors.Window;
-            this.tPollCount.Location = new System.Drawing.Point(137, 52);
+            this.tPollCount.Location = new System.Drawing.Point(201, 52);
             this.tPollCount.Name = "tPollCount";
             this.tPollCount.Size = new System.Drawing.Size(30, 13);
             this.tPollCount.TabIndex = 7;
@@ -159,7 +159,7 @@
             // pTx
             // 
             this.pTx.Image = global::EasyBus_Modbus_Scanner.Properties.Resources.Green;
-            this.pTx.Location = new System.Drawing.Point(123, 54);
+            this.pTx.Location = new System.Drawing.Point(187, 54);
             this.pTx.Name = "pTx";
             this.pTx.Size = new System.Drawing.Size(12, 10);
             this.pTx.TabIndex = 8;

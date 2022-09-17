@@ -19,7 +19,7 @@ namespace EasyBus_Modbus_Scanner
     {
         int dbrowaddress = 0;
         int dbcoloumaddress = 0;
-
+        int err = 0;
         bool[] readCoils = new bool[255];
         bool[] readinputs = new bool[255];
         int[] Registers = new int[255];
@@ -63,7 +63,17 @@ namespace EasyBus_Modbus_Scanner
 
             try
             {
-                modbusClient.Connect(); //Connect to Server
+                try
+                {
+                    if(!modbusClient.Connected)
+                    {
+                        modbusClient.Connect(); //Connect to Server
+                    }
+                }
+                catch
+                {
+                    errorbox.Text = "Timeout";
+                }
 
                 switch (Properties.Settings.Default.Function)
                 {
@@ -83,42 +93,66 @@ namespace EasyBus_Modbus_Scanner
                         readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
                         break;
                 }
+                //Adds data to data grid
+                if (modbusClient.Connected)
+                {
+                    int addloop = Properties.Settings.Default.Amount;
+                    int startingaddy = Properties.Settings.Default.Address;
+                    for (int xc = 0; xc < addloop; xc++)
+                    {
+                        switch (Properties.Settings.Default.Function)
+                        {
+                            case 0:
 
-                PollCount++;
-                errorbox.Text = "Connected";
+                                if (readCoils[xc])
+                                {
+                                    this.DataGrid.Rows.Add("0x", xc + startingaddy, 1);
+                                }
+                                else
+                                {
+                                    this.DataGrid.Rows.Add("0x", xc + startingaddy, 0);
+                                }
+                                err++;
+                                break;
+
+                            case 1:
+
+                                if (readinputs[xc])
+                                {
+                                    this.DataGrid.Rows.Add("1x", xc + startingaddy, 1);
+                                }
+                                else
+                                {
+                                    this.DataGrid.Rows.Add("1x", xc + startingaddy, 0);
+                                }
+                                break;
+
+                            case 2:
+                                ushort HoldingRegister = (ushort)Registers[xc];
+                                this.DataGrid.Rows.Add("4x", xc + startingaddy, HoldingRegister);
+                                break;
+
+                            case 3:
+                                ushort InputRegisters = (ushort)readInputStatus[xc];
+                                this.DataGrid.Rows.Add("3x", xc + startingaddy, InputRegisters);
+                                break;
+                        }
+                    }
+                    PollCount++;
+                    errorbox.Text = "Connected";
+                }
+            }
+            catch (EasyModbus.Exceptions.StartingAddressInvalidException)
+            {
+                errorbox.Text = "Illegal Data Address";
+            }
+            catch(EasyModbus.Exceptions.FunctionCodeNotSupportedException)
+            {
+                errorbox.Text = "Function Code Doesnt Exist";
             }
             catch
             {
                 errorbox.Text = "Timeout";
-            }
-            //Adds data to data grid
-            if (modbusClient.Connected)
-            {
-                for (int i = 0; i < Properties.Settings.Default.Amount; i++)
-                {
-                    switch (Properties.Settings.Default.Function)
-                    {
-                        case 0:
-                            bool CoilStatus = readCoils[i];
-                            this.DataGrid.Rows.Add("0x", i + Properties.Settings.Default.Address, CoilStatus);
-                            break;
-
-                        case 1:
-                            bool InputStatus = readinputs[i];
-                            this.DataGrid.Rows.Add("1x", i + Properties.Settings.Default.Address, InputStatus);
-                            break;
-
-                        case 2:
-                            ushort HoldingRegister = (ushort)Registers[i];
-                            this.DataGrid.Rows.Add("4x", i + Properties.Settings.Default.Address, HoldingRegister);
-                            break;
-
-                        case 3:
-                            ushort InputRegisters = (ushort)readInputStatus[i];
-                            this.DataGrid.Rows.Add("3x", i + Properties.Settings.Default.Address, InputRegisters);
-                            break;
-                    }
-                }
             }
         }
 
@@ -144,48 +178,79 @@ namespace EasyBus_Modbus_Scanner
                 {
                     Connect();
                 }
-
-                if (oldstartingregsize != Properties.Settings.Default.Address)
+                else
                 {
-                    Array.Clear(DataType, 0, DataType.Length);
+                    if (oldstartingregsize != Properties.Settings.Default.Address)
+                    {
+                        Array.Clear(DataType, 0, DataType.Length);
+                    }
+
+                    oldstartingregsize = Properties.Settings.Default.Address;
+
+                    switch (Properties.Settings.Default.Function)
+                    {
+                        case 0://0x
+                            oldloopcount = readCoils.Length;
+                            break;
+
+                        case 1://1x
+                            oldloopcount = readinputs.Length;
+                            break;
+
+                        case 2://4x
+                            oldloopcount = Registers.Length;
+                            break;
+
+                        case 3://3x
+                            oldloopcount = readInputStatus.Length;
+                            break;
+                    }
+
+                    pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
+
+                    switch (Properties.Settings.Default.Function)
+                    {
+                        case 0://0x
+                            readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            loopcount = readCoils.Length;
+                            break;
+
+                        case 1://1x
+                            readinputs = modbusClient.ReadDiscreteInputs(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            loopcount = readinputs.Length;
+                            break;
+
+                        case 2://4x
+                            Registers = modbusClient.ReadHoldingRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            loopcount = Registers.Length;
+                            break;
+
+                        case 3://3x
+                            readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            loopcount = readInputStatus.Length;
+                            break;
+                    }
+
+                    PollCount++;
+                    tPollCount.Text = "Poll : " + PollCount;
+                    errorbox.Text = "Connected";
+
                 }
-
-                oldstartingregsize = Properties.Settings.Default.Address;
-
-                oldloopcount = Registers.Length;
-
-                pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
-
-                switch (Properties.Settings.Default.Function)
-                {
-                    case 0://0x
-                        readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-
-                    case 1://1x
-                        readinputs = modbusClient.ReadDiscreteInputs(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-
-                    case 2://4x
-                        Registers = modbusClient.ReadHoldingRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-
-                    case 3://3x
-                        readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-                }
-
-                PollCount++;
-                tPollCount.Text = "Poll : " + PollCount;
-
-                loopcount = Registers.Length;
-                errorbox.Text = "Connected";
+            }
+            catch (EasyModbus.Exceptions.StartingAddressInvalidException)
+            {
+                errorbox.Text = "Illegal Data Address";
+            }
+            catch (EasyModbus.Exceptions.FunctionCodeNotSupportedException)
+            {
+                errorbox.Text = "Function Code Doesnt Exist";
             }
             catch
             {
                 errorbox.Text = "Timeout";
                 Connect();
             }
+
             if (modbusClient.Connected)
             {
                 try
@@ -225,164 +290,188 @@ namespace EasyBus_Modbus_Scanner
                     }
                 }
                 catch { }
-                for (int i = 0; i < loopcount; i++)
+                if (DataGrid.RowCount == 0)
                 {
-                    try
+                    Connect();
+                }
+                else
+                {
+                    for (int i = 0; i < loopcount; i++)
                     {
-                        //Data Types
-                        //0 = Signed
-                        //1 = Unsigned
-                        //3 = Hex
-                        //4 = Binary
-
-                        if (Properties.Settings.Default.Function == 2 || Properties.Settings.Default.Function == 3)
+                        try
                         {
-                            if (DataType[i] == 0)
-                            {
-                                switch (Properties.Settings.Default.Function)
-                                {
-                                    case 2:
-                                        short signed = (short)Registers[i];
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = signed;
-                                        //DataGrid.Rows[i].Cells[3].Value = "Signed";
-                                        break;
+                            //Data Types
+                            //0 = Signed
+                            //1 = Unsigned
+                            //3 = Hex
+                            //4 = Binary
 
-                                    case 3:
-                                        short signed2 = (short)readInputStatus[i];
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = signed2;
-                                        break;
+                            if (Properties.Settings.Default.Function == 2 || Properties.Settings.Default.Function == 3)
+                            {
+                                if (DataType[i] == 0)
+                                {
+                                    switch (Properties.Settings.Default.Function)
+                                    {
+                                        case 2:
+                                            short signed = (short)Registers[i];
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            DataGrid.Rows[i].Cells[2].Value = signed;
+                                            //DataGrid.Rows[i].Cells[3].Value = "Signed";
+                                            break;
+
+                                        case 3:
+                                            short signed2 = (short)readInputStatus[i];
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            DataGrid.Rows[i].Cells[2].Value = signed2;
+                                            break;
+                                    }
+
                                 }
-
-                            }
-                            else if (DataType[i] == 1)
-                            {
-                                switch (Properties.Settings.Default.Function)
+                                else if (DataType[i] == 1)
                                 {
-                                    case 2:
-                                        //Convert Signed Int into Unsigned int 
-                                        ushort unsigned = (ushort)Registers[i];
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = unsigned;
-                                        //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
-                                        break;
+                                    switch (Properties.Settings.Default.Function)
+                                    {
+                                        case 2:
+                                            //Convert Signed Int into Unsigned int 
+                                            ushort unsigned = (ushort)Registers[i];
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            DataGrid.Rows[i].Cells[2].Value = unsigned;
+                                            //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
+                                            break;
 
-                                    case 3:
-                                        //Convert Signed Int into Unsigned int 
-                                        ushort unsigned2 = (ushort)readInputStatus[i];
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = unsigned2;
-                                        //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
-                                        break;
+                                        case 3:
+                                            //Convert Signed Int into Unsigned int 
+                                            ushort unsigned2 = (ushort)readInputStatus[i];
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            DataGrid.Rows[i].Cells[2].Value = unsigned2;
+                                            //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
+                                            break;
+                                    }
+
                                 }
-
-                            }
-                            else if (DataType[i] == 2)
-                            {
-                                switch (Properties.Settings.Default.Function)
+                                else if (DataType[i] == 2)
                                 {
-                                    case 2:
-                                        // Convert Interget to Hex
-                                        string hex = Convert.ToString(Registers[i], 16);
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = "0x" + hex.ToUpper();
-                                        //DataGrid.Rows[i].Cells[3].Value = "Hex";
-                                        break;
+                                    switch (Properties.Settings.Default.Function)
+                                    {
+                                        case 2:
+                                            // Convert Interget to Hex
+                                            string hex = Convert.ToString(Registers[i], 16);
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            DataGrid.Rows[i].Cells[2].Value = "0x" + hex.ToUpper();
+                                            //DataGrid.Rows[i].Cells[3].Value = "Hex";
+                                            break;
 
-                                    case 3:
-                                        // Convert Interget to Hex
-                                        string hex2 = Convert.ToString(readInputStatus[i], 16);
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = "0x" + hex2.ToUpper();
-                                        //DataGrid.Rows[i].Cells[3].Value = "Hex";
-                                        break;
+                                        case 3:
+                                            // Convert Interget to Hex
+                                            string hex2 = Convert.ToString(readInputStatus[i], 16);
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            DataGrid.Rows[i].Cells[2].Value = "0x" + hex2.ToUpper();
+                                            //DataGrid.Rows[i].Cells[3].Value = "Hex";
+                                            break;
+                                    }
+
                                 }
-
-                            }
-                            else if (DataType[i] == 3)
-                            {
-
-                                switch (Properties.Settings.Default.Function)
+                                else if (DataType[i] == 3)
                                 {
-                                    case 2:
-                                        //Convert INT Value to Binary
-                                        short signed = (short)Registers[i];
-                                        int toadd = 0;
-                                        string binary = Convert.ToString(signed, 2);
-                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        toadd = 16 - binary.Length;
 
-                                        for (int x = 0; x < toadd; x++)
-                                        {
-                                            binary = "0" + binary;
-                                        }
+                                    switch (Properties.Settings.Default.Function)
+                                    {
+                                        case 2:
+                                            //Convert INT Value to Binary
+                                            short signed = (short)Registers[i];
+                                            int toadd = 0;
+                                            string binary = Convert.ToString(signed, 2);
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            toadd = 16 - binary.Length;
 
-                                        // Add space to binary every 4 bits
-                                        for (int l = 0; l < binary.Length; l++)
-                                        {
-                                            if (l % 5 == 0)
+                                            for (int x = 0; x < toadd; x++)
                                             {
-                                                binary = binary.Insert(l, " ");
+                                                binary = "0" + binary;
                                             }
-                                        }
 
-                                        DataGrid.Rows[i].Cells[2].Value = binary;
-                                        //DataGrid.Rows[i].Cells[3].Value = "Binary";
+                                            // Add space to binary every 4 bits
+                                            for (int l = 0; l < binary.Length; l++)
+                                            {
+                                                if (l % 5 == 0)
+                                                {
+                                                    binary = binary.Insert(l, " ");
+                                                }
+                                            }
+
+                                            DataGrid.Rows[i].Cells[2].Value = binary;
+                                            //DataGrid.Rows[i].Cells[3].Value = "Binary";
+                                            break;
+
+                                        case 3:
+                                            //Convert INT Value to Binary
+                                            short signed2 = (short)readInputStatus[i];
+                                            int toadd2 = 0;
+                                            string binary2 = Convert.ToString(signed2, 2);
+                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                            toadd2 = 16 - binary2.Length;
+
+                                            for (int x2 = 0; x2 < toadd2; x2++)
+                                            {
+                                                binary2 = "0" + binary2;
+                                            }
+
+                                            // Add space to binary every 4 bits
+                                            for (int l2 = 0; l2 < binary2.Length; l2++)
+                                            {
+                                                if (l2 % 5 == 0)
+                                                {
+                                                    binary2 = binary2.Insert(l2, " ");
+                                                }
+                                            }
+
+                                            DataGrid.Rows[i].Cells[2].Value = binary2;
+                                            //DataGrid.Rows[i].Cells[3].Value = "Binary";
+                                            break;
+                                    }
+
+                                }
+                            }
+                            else
+                            {
+                                switch (Properties.Settings.Default.Function)
+                                {
+                                    case 0:
+                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+
+                                        if (readCoils[i])
+                                        {
+                                            DataGrid.Rows[i].Cells[2].Value = 1;
+                                        }
+                                        else
+                                        {
+                                            DataGrid.Rows[i].Cells[2].Value = 0;
+                                        }
                                         break;
 
-                                    case 3:
-                                        //Convert INT Value to Binary
-                                        short signed2 = (short)readInputStatus[i];
-                                        int toadd2 = 0;
-                                        string binary2 = Convert.ToString(signed2, 2);
+                                    case 1:
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        toadd2 = 16 - binary2.Length;
-
-                                        for (int x2 = 0; x2 < toadd2; x2++)
+                                        if (readinputs[i])
                                         {
-                                            binary2 = "0" + binary2;
+                                            DataGrid.Rows[i].Cells[2].Value = 1;
+                                        }
+                                        else
+                                        {
+                                            DataGrid.Rows[i].Cells[2].Value = 0;
                                         }
 
-                                        // Add space to binary every 4 bits
-                                        for (int l2 = 0; l2 < binary2.Length; l2++)
-                                        {
-                                            if (l2 % 5 == 0)
-                                            {
-                                                binary2 = binary2.Insert(l2, " ");
-                                            }
-                                        }
-
-                                        DataGrid.Rows[i].Cells[2].Value = binary2;
-                                        //DataGrid.Rows[i].Cells[3].Value = "Binary";
                                         break;
                                 }
-
                             }
-                        }
-                        else
-                        {
-                            switch (Properties.Settings.Default.Function)
-                            {
-                                case 0:
-                                    DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                    DataGrid.Rows[i].Cells[2].Value = readCoils[i];
-                                    break;
 
-                                case 1:
-                                    DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                    DataGrid.Rows[i].Cells[2].Value = readinputs[i];
-                                    break;
-                            }
                         }
-
+                        catch { }
                     }
-                    catch { }
                 }
                 pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Grey;
             }
         }
-
+        
+        //Writes data to modbus registers
         public void WriteData()
         {
             if (modbusClient.Connected)
@@ -395,7 +484,33 @@ namespace EasyBus_Modbus_Scanner
 
                 try
                 {
-                    modbusClient.WriteSingleRegister(CurrentRow + Properties.Settings.Default.Address, writenumber);
+                    switch (Properties.Settings.Default.Function)
+                    {
+                        case 0://0x
+                            
+                            if (writenumber == 0)
+                            {
+                                modbusClient.WriteSingleCoil(CurrentRow + Properties.Settings.Default.Address, false);
+                            }
+                            else if(writenumber == 1)
+                            {
+                                modbusClient.WriteSingleCoil(CurrentRow + Properties.Settings.Default.Address, true);
+                            }
+                            
+                            break;
+
+                        case 1://1x
+
+                            break;
+
+                        case 2://4x
+                            modbusClient.WriteSingleRegister(CurrentRow + Properties.Settings.Default.Address, writenumber);
+                            break;
+
+                        case 3://3x
+                            
+                            break;
+                    }
                 }
                 catch
                 {
@@ -406,7 +521,7 @@ namespace EasyBus_Modbus_Scanner
 
         public void UpdateDataGrid()
         {
-            //DataGrid.Rows[0].Cells[2].Value = "Test";
+
         }
 
         private void polltimer_Tick(object sender, EventArgs e)
@@ -420,6 +535,7 @@ namespace EasyBus_Modbus_Scanner
         }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
+            setupToolStripMenuItem.Enabled = false;
             connectToolStripMenuItem.Enabled = false;
             bConnect.Enabled = false;
             bStop.Enabled = true;
@@ -427,8 +543,6 @@ namespace EasyBus_Modbus_Scanner
             DataGrid.Rows.Clear();
             Connect();
             polltimer.Enabled = true;
-
-
         }
 
         public void Thread1()
@@ -438,6 +552,7 @@ namespace EasyBus_Modbus_Scanner
 
         private void bStop_Click(object sender, EventArgs e)
         {
+            setupToolStripMenuItem.Enabled = true;
             connectToolStripMenuItem.Enabled = true;
             modbusClient.Disconnect();
             bConnect.Enabled = true;
@@ -478,31 +593,38 @@ namespace EasyBus_Modbus_Scanner
                 //1 = Unsigned
                 //3 = Hex
                 //4 = Binary
-                switch (DataType[CurrentRow])
+                if (Properties.Settings.Default.Function == 2)
                 {
-                    //0 = Signed
-                    case 0:
+                    switch (DataType[CurrentRow])
+                    {
+                        //0 = Signed
+                        case 0:
 
-                        writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
-                        break;
+                            writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                            break;
 
-                    //1 = Unsigned
-                    case 1:
+                        //1 = Unsigned
+                        case 1:
 
-                        writenumber = Convert.ToUInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
-                        break;
+                            writenumber = Convert.ToUInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                            break;
 
-                    //3 = Hex
-                    case 2:
+                        //3 = Hex
+                        case 2:
 
-                        writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
-                        break;
+                            writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                            break;
 
-                    //4 = Binary
-                    case 3:
-                        string trimmed = DataGrid.Rows[CurrentRow].Cells[2].Value.ToString();
-                        writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
-                        break;
+                        //4 = Binary
+                        case 3:
+                            string trimmed = DataGrid.Rows[CurrentRow].Cells[2].Value.ToString();
+                            writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                            break;
+                    }
+                }
+                else if (Properties.Settings.Default.Function == 0)
+                {
+                    writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
                 }
             }
             catch

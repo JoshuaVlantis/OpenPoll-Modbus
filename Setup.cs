@@ -25,6 +25,10 @@ namespace EasyBus_Modbus_Scanner
             Properties.Settings.Default.Function = comboBox1.SelectedIndex;
             Properties.Settings.Default.Save();
             //Properties.Settings.Default.Upgrade();
+            if (System.Windows.Forms.Application.OpenForms["Home"] != null)
+            {
+                (System.Windows.Forms.Application.OpenForms["Home"] as Home).UpdateDataGrid();
+            }
             this.Close();
         }
 
