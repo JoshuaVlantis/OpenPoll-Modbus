@@ -607,14 +607,22 @@ namespace EasyBus_Modbus_Scanner
 
             if (DataType[rowIndex] == 3)
             {
+                //Gets binary and converts it to a INT to send to binary editor
+                string data = DataGrid.Rows[rowIndex].Cells[2].Value.ToString();
+                data = data.Replace(" ", "");
+                Properties.Settings.Default.BinaryControlWord = Convert.ToInt32(data, 2);
+
                 Form bnr = new BinaryEditor();
                 bnr.Show();
             }
         }
-        private void DataGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
+
+        //Credit to stefan 
+        public void BinaryEdit()
         {
+            //MessageBox.Show(Properties.Settings.Default.BinaryControlWord.ToString());
+            writenumber = Properties.Settings.Default.BinaryControlWord;
 
         }
-
     }
 }

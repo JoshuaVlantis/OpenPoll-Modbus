@@ -20,7 +20,108 @@ namespace EasyBus_Modbus_Scanner
 
         private void BinaryEditor_Load(object sender, EventArgs e)
         {
+            ConvertToBin();
+        }
 
+        public void ConvertToBin()
+        {
+            int data = Properties.Settings.Default.BinaryControlWord;
+            string binary = Convert.ToString(data, 2);
+
+            int toadd = 0;
+            toadd = 16 - binary.Length;
+
+            for (int x = 0; x < toadd; x++)
+            {
+                binary = "0" + binary;
+            }
+
+            char[] cbinary = binary.ToCharArray();
+
+            char[] Zero = "0".ToCharArray();
+            char[] One = "1".ToCharArray();
+
+            if (cbinary[15 - 15] == Zero[0])
+                b15.Checked = false;
+            else if (cbinary[15 - 15] == One[0])
+                b15.Checked = true;
+
+            if (cbinary[15 - 14] == Zero[0])
+                b14.Checked = false;
+            else if (cbinary[15 - 14] == One[0])
+                b14.Checked = true;
+
+            if (cbinary[15 - 13] == Zero[0])
+                b13.Checked = false;
+            else if (cbinary[15 - 13] == One[0])
+                b13.Checked = true;
+
+            if (cbinary[15 - 12] == Zero[0])
+                b12.Checked = false;
+            else if (cbinary[15 - 12] == One[0])
+                b12.Checked = true;
+
+            if (cbinary[15 - 11] == Zero[0])
+                b11.Checked = false;
+            else if (cbinary[15 - 11] == One[0])
+                b11.Checked = true;
+
+            if (cbinary[15 - 10] == Zero[0])
+                b10.Checked = false;
+            else if (cbinary[15 - 10] == One[0])
+                b10.Checked = true;
+
+            if (cbinary[15 - 9] == Zero[0])
+                b9.Checked = false;
+            else if (cbinary[15 - 9] == One[0])
+                b9.Checked = true;
+
+            if (cbinary[15 - 8] == Zero[0])
+                b8.Checked = false;
+            else if (cbinary[15 - 8] == One[0])
+                b8.Checked = true;
+
+            if (cbinary[15 - 7] == Zero[0])
+                b7.Checked = false;
+            else if (cbinary[15 - 7] == One[0])
+                b7.Checked = true;
+
+            if (cbinary[15 - 6] == Zero[0])
+                b6.Checked = false;
+            else if (cbinary[15 - 6] == One[0])
+                b6.Checked = true;
+
+            if (cbinary[15 - 5] == Zero[0])
+                b5.Checked = false;
+            else if (cbinary[15 - 5] == One[0])
+                b5.Checked = true;
+
+            if (cbinary[15 - 4] == Zero[0])
+                b4.Checked = false;
+            else if (cbinary[15 - 4] == One[0])
+                b4.Checked = true;
+
+            if (cbinary[15 - 3] == Zero[0])
+                b3.Checked = false;
+            else if (cbinary[15 - 3] == One[0])
+                b3.Checked = true;
+
+            if (cbinary[15 - 2] == Zero[0])
+                b2.Checked = false;
+            else if (cbinary[15 - 2] == One[0])
+                b2.Checked = true;
+
+            if (cbinary[15 - 1] == Zero[0])
+                b1.Checked = false;
+            else if (cbinary[15 - 1] == One[0])
+                b1.Checked = true;
+
+            if (cbinary[15 - 0] == Zero[0])
+                b0.Checked = false;
+            else if (cbinary[15 - 0] == One[0])
+                b0.Checked = true;
+
+            //Fill check boxes
         }
 
         public void send_Click(object sender, EventArgs e)
@@ -111,8 +212,13 @@ namespace EasyBus_Modbus_Scanner
                 ControlWord |= 1 << 15;
             else
                 ControlWord &= ~(1 << 15);
+            Properties.Settings.Default.BinaryControlWord = ControlWord;
+            
+            //Credit to stefan
+            Home HomeVar = new Home();
+            HomeVar.BinaryEdit();
+            this.Close();
 
         }
-
     }
 }
