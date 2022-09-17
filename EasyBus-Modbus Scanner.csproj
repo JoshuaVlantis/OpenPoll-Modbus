@@ -55,6 +55,12 @@
     <Compile Include="ConnectionSetup.Designer.cs">
       <DependentUpon>ConnectionSetup.cs</DependentUpon>
     </Compile>
+    <Compile Include="BinaryEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BinaryEditor.Designer.cs">
+      <DependentUpon>BinaryEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="Home.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -75,6 +81,9 @@
     <Compile Include="Setup.Designer.cs">
       <DependentUpon>Setup.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="BinaryEditor.resx">
+      <DependentUpon>BinaryEditor.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ConnectionSetup.resx">
       <DependentUpon>ConnectionSetup.cs</DependentUpon>
     </EmbeddedResource>

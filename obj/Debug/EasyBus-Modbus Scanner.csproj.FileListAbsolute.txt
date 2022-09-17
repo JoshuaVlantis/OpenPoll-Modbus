@@ -44,3 +44,4 @@ C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner
 C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
 C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.exe
 C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.BinaryEditor.resources

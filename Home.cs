@@ -25,7 +25,7 @@ namespace EasyBus_Modbus_Scanner
         int[] Registers = new int[255];
         int[] readInputStatus = new int[255];
 
-        int[] DataType = new int[1000];
+        int[] DataType = new int[255];
         int CurrentRow;
         int writenumber;
         ulong PollCount;
@@ -286,7 +286,7 @@ namespace EasyBus_Modbus_Scanner
                                         // Convert Interget to Hex
                                         string hex = Convert.ToString(Registers[i], 16);
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = hex.ToUpper();
+                                        DataGrid.Rows[i].Cells[2].Value = "0x" + hex.ToUpper();
                                         //DataGrid.Rows[i].Cells[3].Value = "Hex";
                                         break;
 
@@ -294,7 +294,7 @@ namespace EasyBus_Modbus_Scanner
                                         // Convert Interget to Hex
                                         string hex2 = Convert.ToString(readInputStatus[i], 16);
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = hex2.ToUpper();
+                                        DataGrid.Rows[i].Cells[2].Value = "0x" + hex2.ToUpper();
                                         //DataGrid.Rows[i].Cells[3].Value = "Hex";
                                         break;
                                 }
@@ -467,12 +467,43 @@ namespace EasyBus_Modbus_Scanner
 
         }
 
+        //Gets updated cell value and sends it off to write the data
         private void DataGrid_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             CurrentRow = DataGrid.CurrentRow.Index;
             try
             {
-                writenumber = Convert.ToInt32(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                //Data Types
+                //0 = Signed
+                //1 = Unsigned
+                //3 = Hex
+                //4 = Binary
+                switch (DataType[CurrentRow])
+                {
+                    //0 = Signed
+                    case 0:
+
+                        writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                        break;
+
+                    //1 = Unsigned
+                    case 1:
+
+                        writenumber = Convert.ToUInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                        break;
+
+                    //3 = Hex
+                    case 2:
+
+                        writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                        break;
+
+                    //4 = Binary
+                    case 3:
+                        string trimmed = DataGrid.Rows[CurrentRow].Cells[2].Value.ToString();
+                        writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
+                        break;
+                }
             }
             catch
             { }
@@ -530,19 +561,55 @@ namespace EasyBus_Modbus_Scanner
         private void Signed(object sender, System.EventArgs e)
         {
             DataType[dbrowaddress] = 0;
+            DataGrid.CurrentCell.ReadOnly = false;
+
         }
         private void Unsigned(object sender, System.EventArgs e)
         {
             DataType[dbrowaddress] = 1;
+            DataGrid.CurrentCell.ReadOnly = false;
+
         }
         private void Hex(object sender, System.EventArgs e)
         {
             DataType[dbrowaddress] = 2;
+            DataGrid.CurrentCell.ReadOnly = false;
         }
         private void Binary(object sender, System.EventArgs e)
         {
             DataType[dbrowaddress] = 3;
+            DataGrid.CurrentCell.ReadOnly = true;
+
         }
         //#############################################################################################
+
+        //Changes cell value to read only so user cant add some rubbish binary
+        //Double click will allow user to edit binary with binary editor
+        private void DataGrid_SelectionChanged(object sender, EventArgs e)
+        {
+            int columnIndex = DataGrid.CurrentCell.ColumnIndex;
+            int rowIndex = DataGrid.CurrentCell.RowIndex;
+
+            if(DataType[rowIndex] == 3)
+            {
+                DataGrid.CurrentCell.ReadOnly = true;
+            }
+            else
+            {
+                DataGrid.CurrentCell.ReadOnly = false;
+            }
+        }
+
+        private void DataGrid_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            int columnIndex = DataGrid.CurrentCell.ColumnIndex;
+            int rowIndex = DataGrid.CurrentCell.RowIndex;
+            
+            if (DataType[rowIndex] == 3)
+            {
+                Form bnr = new BinaryEditor();
+                bnr.Show();
+            }
+        }
     }
 }
