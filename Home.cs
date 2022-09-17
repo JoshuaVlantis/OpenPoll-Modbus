@@ -613,6 +613,7 @@ namespace EasyBus_Modbus_Scanner
                 Properties.Settings.Default.BinaryControlWord = Convert.ToInt32(data, 2);
 
                 Form bnr = new BinaryEditor();
+                CurrentRow = rowIndex;
                 bnr.Show();
             }
         }
@@ -620,9 +621,8 @@ namespace EasyBus_Modbus_Scanner
         //Credit to stefan 
         public void BinaryEdit()
         {
-            //MessageBox.Show(Properties.Settings.Default.BinaryControlWord.ToString());
             writenumber = Properties.Settings.Default.BinaryControlWord;
-
+            WriteData();
         }
     }
 }
