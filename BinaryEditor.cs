@@ -10,6 +10,7 @@ using System.Windows.Forms;
 
 namespace EasyBus_Modbus_Scanner
 {
+
     public partial class BinaryEditor : Form
     {
         public BinaryEditor()
@@ -22,10 +23,10 @@ namespace EasyBus_Modbus_Scanner
 
         }
 
-        private void send_Click(object sender, EventArgs e)
+        public void send_Click(object sender, EventArgs e)
         {
+            
             int ControlWord = 0;
-
             ////Set               Bitpos
             //ControlWord |= 1 << 0;
             ////Reset               Bitpos
@@ -111,7 +112,7 @@ namespace EasyBus_Modbus_Scanner
             else
                 ControlWord &= ~(1 << 15);
 
-            Properties.Settings.Default.BinaryControlWord = ControlWord;
         }
+
     }
 }

@@ -48,8 +48,8 @@ namespace EasyBus_Modbus_Scanner
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            
-        }        
+
+        }
         public void Connect()
         {
             modbusClient.IPAddress = Properties.Settings.Default.IPAddress;
@@ -65,7 +65,7 @@ namespace EasyBus_Modbus_Scanner
             {
                 modbusClient.Connect(); //Connect to Server
 
-                switch(Properties.Settings.Default.Function)
+                switch (Properties.Settings.Default.Function)
                 {
                     case 0: //0x
                         readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
@@ -92,11 +92,11 @@ namespace EasyBus_Modbus_Scanner
                 errorbox.Text = "Timeout";
             }
             //Adds data to data grid
-            if(modbusClient.Connected)
+            if (modbusClient.Connected)
             {
                 for (int i = 0; i < Properties.Settings.Default.Amount; i++)
                 {
-                    switch(Properties.Settings.Default.Function)
+                    switch (Properties.Settings.Default.Function)
                     {
                         case 0:
                             bool CoilStatus = readCoils[i];
@@ -146,19 +146,19 @@ namespace EasyBus_Modbus_Scanner
                 }
 
                 if (oldstartingregsize != Properties.Settings.Default.Address)
-                {   
+                {
                     Array.Clear(DataType, 0, DataType.Length);
                 }
-                
+
                 oldstartingregsize = Properties.Settings.Default.Address;
-                
+
                 oldloopcount = Registers.Length;
-                
+
                 pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
-                
+
                 switch (Properties.Settings.Default.Function)
                 {
-                    case 0: //0x
+                    case 0://0x
                         readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
                         break;
 
@@ -416,7 +416,7 @@ namespace EasyBus_Modbus_Scanner
             tid1.IsBackground = true;
 
             tid1.Start();
-            
+
         }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
@@ -428,7 +428,7 @@ namespace EasyBus_Modbus_Scanner
             Connect();
             polltimer.Enabled = true;
 
-            
+
         }
 
         public void Thread1()
@@ -443,7 +443,7 @@ namespace EasyBus_Modbus_Scanner
             bConnect.Enabled = true;
             bStop.Enabled = false;
 
-            polltimer.Enabled=false;
+            polltimer.Enabled = false;
         }
         private void connectToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -458,7 +458,7 @@ namespace EasyBus_Modbus_Scanner
         }
         private void setupToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Form stup= new Setup();
+            Form stup = new Setup();
             stup.Show();
         }
 
@@ -516,7 +516,7 @@ namespace EasyBus_Modbus_Scanner
             //GC.Collect();
         }
 
-//DATA TYPES###################################################################################
+        //DATA TYPES###################################################################################
         private void DataGrid_MouseClick(object sender, MouseEventArgs e)
         {
             //Data Types
@@ -524,12 +524,12 @@ namespace EasyBus_Modbus_Scanner
             //1 = Unsigned
             //3 = Hex
             //4 = Binary
-            
+
             if (e.Button == MouseButtons.Right)
             {
                 ContextMenu m = new ContextMenu();
 
-                
+
                 int currentMouseOverRow = DataGrid.HitTest(e.X, e.Y).RowIndex;
                 int currentMouseOverColumn = DataGrid.HitTest(e.X, e.Y).ColumnIndex;
 
@@ -553,7 +553,7 @@ namespace EasyBus_Modbus_Scanner
                         m.MenuItems[2].Click += new EventHandler(Hex);
                         m.MenuItems[3].Click += new EventHandler(Binary);
                     }
-                    
+
                 }
                 m.Show(DataGrid, new Point(e.X, e.Y));
             }
@@ -590,7 +590,7 @@ namespace EasyBus_Modbus_Scanner
             int columnIndex = DataGrid.CurrentCell.ColumnIndex;
             int rowIndex = DataGrid.CurrentCell.RowIndex;
 
-            if(DataType[rowIndex] == 3)
+            if (DataType[rowIndex] == 3)
             {
                 DataGrid.CurrentCell.ReadOnly = true;
             }
@@ -604,12 +604,17 @@ namespace EasyBus_Modbus_Scanner
         {
             int columnIndex = DataGrid.CurrentCell.ColumnIndex;
             int rowIndex = DataGrid.CurrentCell.RowIndex;
-            
+
             if (DataType[rowIndex] == 3)
             {
                 Form bnr = new BinaryEditor();
                 bnr.Show();
             }
         }
+        private void DataGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
     }
 }

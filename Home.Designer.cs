@@ -67,7 +67,7 @@
             this.modbusScraperToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(473, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(723, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -117,7 +117,7 @@
             this.bStop});
             this.toolStrip1.Location = new System.Drawing.Point(0, 24);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(473, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(723, 25);
             this.toolStrip1.TabIndex = 2;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -183,6 +183,7 @@
             this.DataGrid.Name = "DataGrid";
             this.DataGrid.Size = new System.Drawing.Size(514, 383);
             this.DataGrid.TabIndex = 1;
+            this.DataGrid.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGrid_CellContentClick);
             this.DataGrid.CellContentDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGrid_CellContentDoubleClick);
             this.DataGrid.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGrid_CellEndEdit);
             this.DataGrid.SelectionChanged += new System.EventHandler(this.DataGrid_SelectionChanged);
