@@ -48,6 +48,7 @@
             this.DataGridData = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.errorbox = new System.Windows.Forms.Label();
             this.GCcall = new System.Windows.Forms.Timer(this.components);
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pTx)).BeginInit();
@@ -64,7 +65,8 @@
             this.fileToolStripMenuItem,
             this.connectionToolStripMenuItem,
             this.setupToolStripMenuItem,
-            this.modbusScraperToolStripMenuItem});
+            this.modbusScraperToolStripMenuItem,
+            this.toolStripMenuItem1});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(723, 24);
@@ -226,6 +228,12 @@
             this.GCcall.Interval = 5000;
             this.GCcall.Tick += new System.EventHandler(this.GCcall_Tick);
             // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(22, 20);
+            this.toolStripMenuItem1.Text = " ";
+            // 
             // Home
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -275,6 +283,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn DataGridNumber;
         private System.Windows.Forms.DataGridViewTextBoxColumn DataGridName;
         private System.Windows.Forms.DataGridViewTextBoxColumn DataGridData;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
     }
 }
 
