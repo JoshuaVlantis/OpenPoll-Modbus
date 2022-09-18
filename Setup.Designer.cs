@@ -50,6 +50,11 @@
             0,
             0,
             0});
+            this.NodeID.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             this.NodeID.Name = "NodeID";
             this.NodeID.Size = new System.Drawing.Size(64, 20);
             this.NodeID.TabIndex = 16;
@@ -136,6 +141,11 @@
             this.amount.Location = new System.Drawing.Point(144, 107);
             this.amount.Maximum = new decimal(new int[] {
             123,
+            0,
+            0,
+            0});
+            this.amount.Minimum = new decimal(new int[] {
+            1,
             0,
             0,
             0});
