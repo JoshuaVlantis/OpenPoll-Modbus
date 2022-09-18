@@ -24,6 +24,7 @@ namespace EasyBus_Modbus_Scanner
         bool[] readinputs = new bool[255];
         int[] Registers = new int[255];
         int[] readInputStatus = new int[255];
+        bool EditingDataGrid = false;
 
         int[] DataType = new int[255];
         int CurrentRow;
@@ -180,6 +181,8 @@ namespace EasyBus_Modbus_Scanner
                 }
                 else
                 {
+                    pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
+
                     if (oldstartingregsize != Properties.Settings.Default.Address)
                     {
                         Array.Clear(DataType, 0, DataType.Length);
@@ -187,47 +190,28 @@ namespace EasyBus_Modbus_Scanner
 
                     oldstartingregsize = Properties.Settings.Default.Address;
 
-                    switch (Properties.Settings.Default.Function)
-                    {
-                        case 0://0x
-                            oldloopcount = readCoils.Length;
-                            break;
-
-                        case 1://1x
-                            oldloopcount = readinputs.Length;
-                            break;
-
-                        case 2://4x
-                            oldloopcount = Registers.Length;
-                            break;
-
-                        case 3://3x
-                            oldloopcount = readInputStatus.Length;
-                            break;
-                    }
-
-                    pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
+                    oldloopcount = DataGrid.RowCount;
 
                     switch (Properties.Settings.Default.Function)
                     {
                         case 0://0x
                             readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                            loopcount = readCoils.Length;
+                            loopcount = Properties.Settings.Default.Amount;
                             break;
 
                         case 1://1x
                             readinputs = modbusClient.ReadDiscreteInputs(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                            loopcount = readinputs.Length;
+                            loopcount = Properties.Settings.Default.Amount;
                             break;
 
                         case 2://4x
                             Registers = modbusClient.ReadHoldingRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                            loopcount = Registers.Length;
+                            loopcount = Properties.Settings.Default.Amount;
                             break;
 
                         case 3://3x
                             readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                            loopcount = readInputStatus.Length;
+                            loopcount = Properties.Settings.Default.Amount;
                             break;
                     }
 
@@ -256,18 +240,17 @@ namespace EasyBus_Modbus_Scanner
                 try
                 {
                     //If Register read size gets smaller remove rows
-                    if (oldloopcount > loopcount && loopcount != 0)
+                    if (Properties.Settings.Default.Amount < DataGrid.RowCount)
                     {
-                        for (int i = oldloopcount - 1; i > loopcount - 1; i--)
-                        {
-                            DataGrid.Rows.RemoveAt(i);
-                        }
-                    }
-                    //If Register read size gets bigger add cells
-                    if (oldloopcount < loopcount && loopcount != 0)
-                    {
+                        //At first I just removed rows that where no longer used but there was a rare bug that would happen
+                        //This is a much more basic way of doing it, but it works
+                        //DONT TOUCH!!!!!!!!
+                        EditingDataGrid = true;
+                        DataGrid.Rows.Clear();
+
                         for (int i = 0; i < loopcount - oldloopcount; i++)
                         {
+                            EditingDataGrid = true;
                             switch (Properties.Settings.Default.Function)
                             {
                                 case 0:
@@ -286,6 +269,36 @@ namespace EasyBus_Modbus_Scanner
                                     this.DataGrid.Rows.Add("3x", "", "");
                                     break;
                             }
+                            EditingDataGrid = false;
+                        }
+
+                        EditingDataGrid = false;
+                    }
+                    //If Register read size gets bigger add cells
+                    if (Properties.Settings.Default.Amount > DataGrid.RowCount)
+                    {
+                        for (int i = 0; i < loopcount - oldloopcount; i++)
+                        {
+                            EditingDataGrid = true;
+                            switch (Properties.Settings.Default.Function)
+                            {
+                                case 0:
+                                    this.DataGrid.Rows.Add("0x", "", "");
+                                    break;
+
+                                case 1:
+                                    this.DataGrid.Rows.Add("1x", "", "");
+                                    break;
+
+                                case 2:
+                                    this.DataGrid.Rows.Add("4x", "", "");
+                                    break;
+
+                                case 3:
+                                    this.DataGrid.Rows.Add("3x", "", "");
+                                    break;
+                            }
+                            EditingDataGrid = false;
                         }
                     }
                 }
@@ -314,13 +327,15 @@ namespace EasyBus_Modbus_Scanner
                                     {
                                         case 2:
                                             short signed = (short)Registers[i];
-                                            DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                            DataGrid.Rows[i].Cells[2].Value = signed;
+                                            DataGrid.Rows[i].Cells[0].Value = Convert.ToString("4x");
+                                            DataGrid.Rows[i].Cells[1].Value = Convert.ToString(i + Properties.Settings.Default.Address);
+                                            DataGrid.Rows[i].Cells[2].Value = Convert.ToString(signed);
                                             //DataGrid.Rows[i].Cells[3].Value = "Signed";
                                             break;
 
                                         case 3:
                                             short signed2 = (short)readInputStatus[i];
+                                            DataGrid.Rows[i].Cells[0].Value = "3x";
                                             DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                             DataGrid.Rows[i].Cells[2].Value = signed2;
                                             break;
@@ -334,14 +349,16 @@ namespace EasyBus_Modbus_Scanner
                                         case 2:
                                             //Convert Signed Int into Unsigned int 
                                             ushort unsigned = (ushort)Registers[i];
+                                            DataGrid.Rows[i].Cells[0].Value = "4x";
                                             DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                            DataGrid.Rows[i].Cells[2].Value = unsigned;
+                                            DataGrid.Rows[i].Cells[2].Value = Convert.ToString(unsigned);
                                             //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
                                             break;
 
                                         case 3:
                                             //Convert Signed Int into Unsigned int 
                                             ushort unsigned2 = (ushort)readInputStatus[i];
+                                            DataGrid.Rows[i].Cells[0].Value = "3x";
                                             DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                             DataGrid.Rows[i].Cells[2].Value = unsigned2;
                                             //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
@@ -356,6 +373,7 @@ namespace EasyBus_Modbus_Scanner
                                         case 2:
                                             // Convert Interget to Hex
                                             string hex = Convert.ToString(Registers[i], 16);
+                                            DataGrid.Rows[i].Cells[0].Value = "4x";
                                             DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                             DataGrid.Rows[i].Cells[2].Value = "0x" + hex.ToUpper();
                                             //DataGrid.Rows[i].Cells[3].Value = "Hex";
@@ -364,6 +382,7 @@ namespace EasyBus_Modbus_Scanner
                                         case 3:
                                             // Convert Interget to Hex
                                             string hex2 = Convert.ToString(readInputStatus[i], 16);
+                                            DataGrid.Rows[i].Cells[0].Value = "3x";
                                             DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                             DataGrid.Rows[i].Cells[2].Value = "0x" + hex2.ToUpper();
                                             //DataGrid.Rows[i].Cells[3].Value = "Hex";
@@ -397,7 +416,7 @@ namespace EasyBus_Modbus_Scanner
                                                     binary = binary.Insert(l, " ");
                                                 }
                                             }
-
+                                            DataGrid.Rows[i].Cells[0].Value = "4x";
                                             DataGrid.Rows[i].Cells[2].Value = binary;
                                             //DataGrid.Rows[i].Cells[3].Value = "Binary";
                                             break;
@@ -423,7 +442,7 @@ namespace EasyBus_Modbus_Scanner
                                                     binary2 = binary2.Insert(l2, " ");
                                                 }
                                             }
-
+                                            DataGrid.Rows[i].Cells[0].Value = "3x";
                                             DataGrid.Rows[i].Cells[2].Value = binary2;
                                             //DataGrid.Rows[i].Cells[3].Value = "Binary";
                                             break;
@@ -446,6 +465,7 @@ namespace EasyBus_Modbus_Scanner
                                         {
                                             DataGrid.Rows[i].Cells[2].Value = 0;
                                         }
+                                        DataGrid.Rows[i].Cells[0].Value = "0x";
                                         break;
 
                                     case 1:
@@ -458,7 +478,7 @@ namespace EasyBus_Modbus_Scanner
                                         {
                                             DataGrid.Rows[i].Cells[2].Value = 0;
                                         }
-
+                                        DataGrid.Rows[i].Cells[0].Value = "1x";
                                         break;
                                 }
                             }
@@ -526,16 +546,17 @@ namespace EasyBus_Modbus_Scanner
 
         private void polltimer_Tick(object sender, EventArgs e)
         {
+            if(!Application.OpenForms.OfType<Setup>().Any())
+            {
+                Thread tid1 = new Thread(new ThreadStart(Thread1));
+                tid1.IsBackground = true;
 
-            Thread tid1 = new Thread(new ThreadStart(Thread1));
-            tid1.IsBackground = true;
-
-            tid1.Start();
-
+                tid1.Start();
+            }
         }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            setupToolStripMenuItem.Enabled = false;
+            //setupToolStripMenuItem.Enabled = false;
             connectToolStripMenuItem.Enabled = false;
             bConnect.Enabled = false;
             bStop.Enabled = true;
@@ -552,7 +573,7 @@ namespace EasyBus_Modbus_Scanner
 
         private void bStop_Click(object sender, EventArgs e)
         {
-            setupToolStripMenuItem.Enabled = true;
+            //setupToolStripMenuItem.Enabled = true;
             connectToolStripMenuItem.Enabled = true;
             modbusClient.Disconnect();
             bConnect.Enabled = true;
@@ -709,17 +730,21 @@ namespace EasyBus_Modbus_Scanner
         //Double click will allow user to edit binary with binary editor
         private void DataGrid_SelectionChanged(object sender, EventArgs e)
         {
-            int columnIndex = DataGrid.CurrentCell.ColumnIndex;
-            int rowIndex = DataGrid.CurrentCell.RowIndex;
 
-            if (DataType[rowIndex] == 3)
+            if(!EditingDataGrid)
             {
-                DataGrid.CurrentCell.ReadOnly = true;
+                int columnIndex = DataGrid.CurrentCell.ColumnIndex;
+                int rowIndex = DataGrid.CurrentCell.RowIndex;
+                if (DataType[rowIndex] == 3)
+                {
+                    DataGrid.CurrentCell.ReadOnly = true;
+                }
+                else
+                {
+                    DataGrid.CurrentCell.ReadOnly = false;
+                }
             }
-            else
-            {
-                DataGrid.CurrentCell.ReadOnly = false;
-            }
+
         }
 
         private void DataGrid_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
