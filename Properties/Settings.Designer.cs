@@ -238,5 +238,17 @@ namespace EasyBus_Modbus_Scanner.Properties {
                 this["BinaryControlWord"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GoodRead {
+            get {
+                return ((bool)(this["GoodRead"]));
+            }
+            set {
+                this["GoodRead"] = value;
+            }
+        }
     }
 }

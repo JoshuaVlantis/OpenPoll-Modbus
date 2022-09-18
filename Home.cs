@@ -55,6 +55,9 @@ namespace EasyBus_Modbus_Scanner
         }
         public void Connect()
         {
+            
+            Properties.Settings.Default.GoodRead = false;
+
             modbusClient.IPAddress = Properties.Settings.Default.IPAddress;
             modbusClient.Port = Properties.Settings.Default.ServerPort;
 
@@ -63,99 +66,185 @@ namespace EasyBus_Modbus_Scanner
             byte[] slave = BitConverter.GetBytes(1);
             modbusClient.UnitIdentifier = slave[0];
             modbusClient.ConnectionTimeout = Properties.Settings.Default.ConnectionTimeOut;
-
+            
             try
             {
-                try
+                if (!modbusClient.Connected)
                 {
-                    if(!modbusClient.Connected)
-                    {
-                        modbusClient.Connect(); //Connect to Server
-                    }
+                    modbusClient.Connect(); //Connect to Server
                 }
-                catch
-                {
-                    errorbox.Text = "Timeout";
-                }
-
-                switch (Properties.Settings.Default.Function)
-                {
-                    case 0: //0x
-                        readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-
-                    case 1://1x
-                        readinputs = modbusClient.ReadDiscreteInputs(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-
-                    case 2://4x
-                        Registers = modbusClient.ReadHoldingRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-
-                    case 3://3x
-                        readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
-                        break;
-                }
-                //Adds data to data grid
-                if (modbusClient.Connected)
-                {
-                    int addloop = Properties.Settings.Default.Amount;
-                    int startingaddy = Properties.Settings.Default.Address;
-                    for (int xc = 0; xc < addloop; xc++)
-                    {
-                        switch (Properties.Settings.Default.Function)
-                        {
-                            case 0:
-
-                                if (readCoils[xc])
-                                {
-                                    this.DataGrid.Rows.Add("0x", xc + startingaddy, 1);
-                                }
-                                else
-                                {
-                                    this.DataGrid.Rows.Add("0x", xc + startingaddy, 0);
-                                }
-                                err++;
-                                break;
-
-                            case 1:
-
-                                if (readinputs[xc])
-                                {
-                                    this.DataGrid.Rows.Add("1x", xc + startingaddy, 1);
-                                }
-                                else
-                                {
-                                    this.DataGrid.Rows.Add("1x", xc + startingaddy, 0);
-                                }
-                                break;
-
-                            case 2:
-                                int HoldingRegister = Registers[xc];
-                                this.DataGrid.Rows.Add("4x", xc + startingaddy, HoldingRegister);
-                                break;
-
-                            case 3:
-                                int InputRegisters = readInputStatus[xc];
-                                this.DataGrid.Rows.Add("3x", xc + startingaddy, InputRegisters);
-                                break;
-                        }
-                    }
-                    PollCount++;
-                    errorbox.Text = "Connected";
-                }
+                //errorbox.ForeColor = System.Drawing.Color.Green;
+                //errorbox.Text = "Connected";
+            }
+            catch (EasyModbus.Exceptions.ConnectionException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Connection Exception";
+            }
+            catch (EasyModbus.Exceptions.CRCCheckFailedException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "CRC Check Failed";
+            }
+            catch (EasyModbus.Exceptions.FunctionCodeNotSupportedException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Function Code Doesnt Exist";
+            }
+            catch (EasyModbus.Exceptions.QuantityInvalidException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Quantity Invalid";
+            }
+            catch (EasyModbus.Exceptions.SerialPortNotOpenedException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Serial Port Not Opened";
             }
             catch (EasyModbus.Exceptions.StartingAddressInvalidException)
             {
+                errorbox.ForeColor = System.Drawing.Color.Red;
                 errorbox.Text = "Illegal Data Address";
             }
-            catch(EasyModbus.Exceptions.FunctionCodeNotSupportedException)
+            catch (System.IO.IOException)
             {
-                errorbox.Text = "Function Code Doesnt Exist";
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Node ID Error";
+                Properties.Settings.Default.GoodRead = false;
             }
             catch
             {
+                errorbox.ForeColor = System.Drawing.Color.Red;
                 errorbox.Text = "Timeout";
+            }
+
+            try
+            {
+                if (modbusClient.Connected)
+                {
+                    switch (Properties.Settings.Default.Function)
+                    {
+                        case 0: //0x
+                            readCoils = modbusClient.ReadCoils(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            break;
+
+                        case 1://1x
+                            readinputs = modbusClient.ReadDiscreteInputs(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            break;
+
+                        case 2://4x
+                            Registers = modbusClient.ReadHoldingRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            break;
+
+                        case 3://3x
+                            readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
+                            break;
+                    }
+                    Properties.Settings.Default.GoodRead = true;
+                }
+            }
+            catch (EasyModbus.Exceptions.ConnectionException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Connection Exception";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch (EasyModbus.Exceptions.CRCCheckFailedException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "CRC Check Failed";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch (EasyModbus.Exceptions.FunctionCodeNotSupportedException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Function Code Doesnt Exist";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch (EasyModbus.Exceptions.QuantityInvalidException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Quantity Invalid";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch (EasyModbus.Exceptions.SerialPortNotOpenedException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Serial Port Not Opened";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch (EasyModbus.Exceptions.StartingAddressInvalidException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Illegal Data Address";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch (System.IndexOutOfRangeException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Timeout";
+                Properties.Settings.Default.GoodRead = false;
+                modbusClient.Disconnect();
+            }
+            catch (System.IO.IOException)
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Node ID Error";
+                Properties.Settings.Default.GoodRead = false;
+            }
+            catch
+            {
+                errorbox.ForeColor = System.Drawing.Color.Red;
+                errorbox.Text = "Timeout";
+                Properties.Settings.Default.GoodRead = false;
+            }
+
+            //Adds data to data grid
+            if (modbusClient.Connected && Properties.Settings.Default.GoodRead)
+            {
+                int addloop = Properties.Settings.Default.Amount;
+                int startingaddy = Properties.Settings.Default.Address;
+                for (int xc = 0; xc < addloop; xc++)
+                {
+                    switch (Properties.Settings.Default.Function)
+                    {
+                        case 0:
+
+                            if (readCoils[xc])
+                            {
+                                this.DataGrid.Rows.Add("0x", xc + startingaddy, 1);
+                            }
+                            else
+                            {
+                                this.DataGrid.Rows.Add("0x", xc + startingaddy, 0);
+                            }
+                            err++;
+                            break;
+
+                        case 1:
+
+                            if (readinputs[xc])
+                            {
+                                this.DataGrid.Rows.Add("1x", xc + startingaddy, 1);
+                            }
+                            else
+                            {
+                                this.DataGrid.Rows.Add("1x", xc + startingaddy, 0);
+                            }
+                            break;
+
+                        case 2:
+                            int HoldingRegister = Registers[xc];
+                            this.DataGrid.Rows.Add("4x", xc + startingaddy, HoldingRegister);
+                            break;
+
+                        case 3:
+                            int InputRegisters = readInputStatus[xc];
+                            this.DataGrid.Rows.Add("3x", xc + startingaddy, InputRegisters);
+                            break;
+                    }
+                }
+                PollCount++;
             }
         }
 
@@ -165,7 +254,6 @@ namespace EasyBus_Modbus_Scanner
 
             modbusClient.IPAddress = Properties.Settings.Default.IPAddress;
             modbusClient.Port = Properties.Settings.Default.ServerPort;
-
             polltimer.Interval = Properties.Settings.Default.PollingRate;
 
             int islave = Properties.Settings.Default.NodeID;
@@ -173,25 +261,25 @@ namespace EasyBus_Modbus_Scanner
 
             modbusClient.UnitIdentifier = slave[0];
             modbusClient.ConnectionTimeout = Properties.Settings.Default.ConnectionTimeOut;
-            
+
             //Try connect and get Data
-            try
+
+
+            if (!modbusClient.Connected) //If not connected try connect
             {
+                Connect();
+            }
+            else
+            {
+                pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
 
-                if (!modbusClient.Connected) //If not connected try connect
+                //if (oldstartingregsize != Properties.Settings.Default.Address)
+                //{
+                //    Array.Clear(DataType, 0, DataType.Length);
+
+                //}
+                try
                 {
-                    Connect();
-                }
-                else
-                {
-                    pTx.Image = EasyBus_Modbus_Scanner.Properties.Resources.Green;
-
-                    //if (oldstartingregsize != Properties.Settings.Default.Address)
-                    //{
-                    //    Array.Clear(DataType, 0, DataType.Length);
-                        
-                    //}
-
                     //Fill Arrays with modbus Data
                     switch (Properties.Settings.Default.Function)
                     {
@@ -211,28 +299,64 @@ namespace EasyBus_Modbus_Scanner
                             readInputStatus = modbusClient.ReadInputRegisters(Properties.Settings.Default.Address, Properties.Settings.Default.Amount);
                             break;
                     }
-
+                    Properties.Settings.Default.GoodRead = true;
+                    errorbox.ForeColor = System.Drawing.Color.Green;
+                    errorbox.Text = "Connected";
                     PollCount++;
                     tPollCount.Text = "Poll : " + PollCount;
-                    errorbox.Text = "Connected";
                 }
-            //Modbus error messages
+                catch (EasyModbus.Exceptions.ConnectionException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Connection Exception";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch (EasyModbus.Exceptions.CRCCheckFailedException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "CRC Check Failed";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch (EasyModbus.Exceptions.FunctionCodeNotSupportedException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Function Code Doesnt Exist";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch (EasyModbus.Exceptions.QuantityInvalidException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Quantity Invalid";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch (EasyModbus.Exceptions.SerialPortNotOpenedException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Serial Port Not Opened";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch (EasyModbus.Exceptions.StartingAddressInvalidException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Illegal Data Address";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch (System.IO.IOException)
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Node ID Error";
+                    Properties.Settings.Default.GoodRead = false;
+                }
+                catch
+                {
+                    errorbox.ForeColor = System.Drawing.Color.Red;
+                    errorbox.Text = "Timeout";
+                    Properties.Settings.Default.GoodRead = false;
+                    Connect();
+                }
             }
-            catch (EasyModbus.Exceptions.StartingAddressInvalidException)
-            {
-                errorbox.Text = "Illegal Data Address";
-            }
-            catch (EasyModbus.Exceptions.FunctionCodeNotSupportedException)
-            {
-                errorbox.Text = "Function Code Doesnt Exist";
-            }
-            catch
-            {
-                errorbox.Text = "Timeout";
-                Connect();
-            }
-            
-            if(modbusClient.Connected)
+
+            if (modbusClient.Connected && Properties.Settings.Default.GoodRead)
             {
                 ResizeDataGrid();
             }
@@ -338,9 +462,9 @@ namespace EasyBus_Modbus_Scanner
                                 {
                                     case 2:
                                         short signed = (short)Registers[i];
-                                        DataGrid.Rows[i].Cells[0].Value = Convert.ToString("4x");
-                                        DataGrid.Rows[i].Cells[1].Value = Convert.ToString(i + Properties.Settings.Default.Address);
-                                        DataGrid.Rows[i].Cells[2].Value = Convert.ToString(signed);
+                                        DataGrid.Rows[i].Cells[0].Value = "4x";
+                                        DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
+                                        DataGrid.Rows[i].Cells[2].Value = signed;
                                         //DataGrid.Rows[i].Cells[3].Value = "Signed";
                                         break;
 
@@ -351,7 +475,6 @@ namespace EasyBus_Modbus_Scanner
                                         DataGrid.Rows[i].Cells[2].Value = signed2;
                                         break;
                                 }
-
                             }
                             else if (DataType[i] == 1)
                             {
@@ -362,8 +485,7 @@ namespace EasyBus_Modbus_Scanner
                                         ushort unsigned = (ushort)Registers[i];
                                         DataGrid.Rows[i].Cells[0].Value = "4x";
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
-                                        DataGrid.Rows[i].Cells[2].Value = Convert.ToString(unsigned);
-                                        //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
+                                        DataGrid.Rows[i].Cells[2].Value = unsigned;
                                         break;
 
                                     case 3:
@@ -372,10 +494,8 @@ namespace EasyBus_Modbus_Scanner
                                         DataGrid.Rows[i].Cells[0].Value = "3x";
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                         DataGrid.Rows[i].Cells[2].Value = unsigned2;
-                                        //DataGrid.Rows[i].Cells[3].Value = "Unsigned";
                                         break;
                                 }
-
                             }
                             else if (DataType[i] == 2)
                             {
@@ -387,7 +507,6 @@ namespace EasyBus_Modbus_Scanner
                                         DataGrid.Rows[i].Cells[0].Value = "4x";
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                         DataGrid.Rows[i].Cells[2].Value = "0x" + hex.ToUpper();
-                                        //DataGrid.Rows[i].Cells[3].Value = "Hex";
                                         break;
 
                                     case 3:
@@ -396,10 +515,8 @@ namespace EasyBus_Modbus_Scanner
                                         DataGrid.Rows[i].Cells[0].Value = "3x";
                                         DataGrid.Rows[i].Cells[1].Value = i + Properties.Settings.Default.Address;
                                         DataGrid.Rows[i].Cells[2].Value = "0x" + hex2.ToUpper();
-                                        //DataGrid.Rows[i].Cells[3].Value = "Hex";
                                         break;
                                 }
-
                             }
                             else if (DataType[i] == 3)
                             {
@@ -458,7 +575,6 @@ namespace EasyBus_Modbus_Scanner
                                         //DataGrid.Rows[i].Cells[3].Value = "Binary";
                                         break;
                                 }
-
                             }
                         }
                         else
@@ -493,7 +609,6 @@ namespace EasyBus_Modbus_Scanner
                                     break;
                             }
                         }
-
                     }
                     catch { }
                 }
@@ -551,7 +666,7 @@ namespace EasyBus_Modbus_Scanner
 
         private void polltimer_Tick(object sender, EventArgs e)
         {
-            if(!Application.OpenForms.OfType<Setup>().Any())
+            if (!Application.OpenForms.OfType<Setup>().Any())
             {
                 Thread tid1 = new Thread(new ThreadStart(Thread1));
                 tid1.IsBackground = true;
@@ -634,7 +749,6 @@ namespace EasyBus_Modbus_Scanner
             }
             catch
             { }
-
             WriteData();
         }
 
@@ -766,6 +880,22 @@ namespace EasyBus_Modbus_Scanner
         {
             Form stup = new Setup();
             stup.Show();
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (!Application.OpenForms.OfType<Setup>().Any())
+            {
+                Thread tid1 = new Thread(new ThreadStart(Thread1));
+                tid1.IsBackground = true;
+
+                tid1.Start();
+            }
         }
     }
 }

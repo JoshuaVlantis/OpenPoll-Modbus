@@ -36,7 +36,10 @@
             this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.modbusScraperToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.bConnect = new System.Windows.Forms.ToolStripButton();
+            this.bStop = new System.Windows.Forms.ToolStripButton();
             this.polltimer = new System.Windows.Forms.Timer(this.components);
             this.tPollCount = new System.Windows.Forms.Label();
             this.DataGrid = new System.Windows.Forms.DataGridView();
@@ -45,10 +48,7 @@
             this.DataGridData = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.errorbox = new System.Windows.Forms.Label();
             this.GCcall = new System.Windows.Forms.Timer(this.components);
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.pTx = new System.Windows.Forms.PictureBox();
-            this.bConnect = new System.Windows.Forms.ToolStripButton();
-            this.bStop = new System.Windows.Forms.ToolStripButton();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DataGrid)).BeginInit();
@@ -108,6 +108,13 @@
             this.modbusScraperToolStripMenuItem.Text = "Modbus Scraper";
             this.modbusScraperToolStripMenuItem.Click += new System.EventHandler(this.modbusScraperToolStripMenuItem_Click);
             // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(52, 20);
+            this.toolStripMenuItem1.Text = "About";
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
+            // 
             // toolStrip1
             // 
             this.toolStrip1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -119,9 +126,29 @@
             this.bStop});
             this.toolStrip1.Location = new System.Drawing.Point(0, 24);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(498, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(483, 25);
             this.toolStrip1.TabIndex = 2;
             this.toolStrip1.Text = "toolStrip1";
+            // 
+            // bConnect
+            // 
+            this.bConnect.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.bConnect.Image = ((System.Drawing.Image)(resources.GetObject("bConnect.Image")));
+            this.bConnect.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.bConnect.Name = "bConnect";
+            this.bConnect.Size = new System.Drawing.Size(23, 22);
+            this.bConnect.Text = "Connect";
+            this.bConnect.Click += new System.EventHandler(this.toolStripButton1_Click);
+            // 
+            // bStop
+            // 
+            this.bStop.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.bStop.Image = ((System.Drawing.Image)(resources.GetObject("bStop.Image")));
+            this.bStop.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.bStop.Name = "bStop";
+            this.bStop.Size = new System.Drawing.Size(23, 22);
+            this.bStop.Text = "Disconnect";
+            this.bStop.Click += new System.EventHandler(this.bStop_Click);
             // 
             // polltimer
             // 
@@ -199,12 +226,6 @@
             this.GCcall.Interval = 5000;
             this.GCcall.Tick += new System.EventHandler(this.GCcall_Tick);
             // 
-            // toolStripMenuItem1
-            // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(22, 20);
-            this.toolStripMenuItem1.Text = " ";
-            // 
             // pTx
             // 
             this.pTx.Image = global::EasyBus_Modbus_Scanner.Properties.Resources.Green;
@@ -213,26 +234,6 @@
             this.pTx.Size = new System.Drawing.Size(12, 10);
             this.pTx.TabIndex = 8;
             this.pTx.TabStop = false;
-            // 
-            // bConnect
-            // 
-            this.bConnect.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.bConnect.Image = ((System.Drawing.Image)(resources.GetObject("bConnect.Image")));
-            this.bConnect.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.bConnect.Name = "bConnect";
-            this.bConnect.Size = new System.Drawing.Size(23, 22);
-            this.bConnect.Text = "Connect";
-            this.bConnect.Click += new System.EventHandler(this.toolStripButton1_Click);
-            // 
-            // bStop
-            // 
-            this.bStop.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.bStop.Image = ((System.Drawing.Image)(resources.GetObject("bStop.Image")));
-            this.bStop.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.bStop.Name = "bStop";
-            this.bStop.Size = new System.Drawing.Size(23, 22);
-            this.bStop.Text = "Disconnect";
-            this.bStop.Click += new System.EventHandler(this.bStop_Click);
             // 
             // Home
             // 
