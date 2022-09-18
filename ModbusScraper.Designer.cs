@@ -113,7 +113,7 @@
             this.connectiontimeout.Size = new System.Drawing.Size(79, 20);
             this.connectiontimeout.TabIndex = 67;
             this.connectiontimeout.Value = new decimal(new int[] {
-            500,
+            3000,
             0,
             0,
             0});

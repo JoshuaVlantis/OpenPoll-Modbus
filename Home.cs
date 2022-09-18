@@ -129,12 +129,12 @@ namespace EasyBus_Modbus_Scanner
                                 break;
 
                             case 2:
-                                ushort HoldingRegister = (ushort)Registers[xc];
+                                int HoldingRegister = Registers[xc];
                                 this.DataGrid.Rows.Add("4x", xc + startingaddy, HoldingRegister);
                                 break;
 
                             case 3:
-                                ushort InputRegisters = (ushort)readInputStatus[xc];
+                                int InputRegisters = readInputStatus[xc];
                                 this.DataGrid.Rows.Add("3x", xc + startingaddy, InputRegisters);
                                 break;
                         }
@@ -581,27 +581,6 @@ namespace EasyBus_Modbus_Scanner
 
             polltimer.Enabled = false;
         }
-        private void connectToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Form cnnt = new ConnectionSetup();
-            cnnt.Show();
-        }
-
-        private void modbusScraperToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Form mbscraper = new ModbusScraper();
-            mbscraper.Show();
-        }
-        private void setupToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Form stup = new Setup();
-            stup.Show();
-        }
-
-        private void DataGrid_KeyPress(object sender, KeyPressEventArgs e)
-        {
-
-        }
 
         //Gets updated cell value and sends it off to write the data
         private void DataGrid_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -770,6 +749,23 @@ namespace EasyBus_Modbus_Scanner
         {
             writenumber = Properties.Settings.Default.BinaryControlWord;
             WriteData();
+        }
+
+        private void connectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form cnnt = new ConnectionSetup();
+            cnnt.Show();
+        }
+
+        private void modbusScraperToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form mbscraper = new ModbusScraper();
+            mbscraper.Show();
+        }
+        private void setupToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form stup = new Setup();
+            stup.Show();
         }
     }
 }
