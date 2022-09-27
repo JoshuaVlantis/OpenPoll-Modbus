@@ -215,10 +215,7 @@ namespace EasyBus_Modbus_Scanner
             Properties.Settings.Default.BinaryControlWord = ControlWord;
 
             //Credit to stefan
-            if (System.Windows.Forms.Application.OpenForms["Home"] != null)
-            {
-                (System.Windows.Forms.Application.OpenForms["Home"] as Home).BinaryEdit();
-            }
+            HomeVar.home.BinaryEdit();
 
             this.Close();
         }

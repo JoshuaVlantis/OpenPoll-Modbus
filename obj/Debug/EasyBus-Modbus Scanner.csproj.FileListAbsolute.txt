@@ -45,3 +45,19 @@ C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner
 C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.exe
 C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.pdb
 C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.BinaryEditor.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\bin\Debug\EasyBus-Modbus Scanner.exe.config
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\bin\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\bin\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.AssemblyReference.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.SuggestedBindingRedirects.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.BinaryEditor.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.ConnectionSetup.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.Home.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.ModbusScraper.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.Properties.Resources.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.Setup.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.GenerateResource.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.CoreCompileInputs.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.pdb
