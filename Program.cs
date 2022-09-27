@@ -16,7 +16,17 @@ namespace EasyBus_Modbus_Scanner
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Home());
+            Run();
         }
+
+        private static void Run()
+        {
+            Application.Run(HomeVar.home);
+        }
+    }
+
+    public static class HomeVar
+    {
+       public static Home home = new Home();
     }
 }
