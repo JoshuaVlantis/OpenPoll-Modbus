@@ -676,6 +676,7 @@ namespace EasyBus_Modbus_Scanner
         }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
+            errorbox.ForeColor = System.Drawing.Color.Black;
             errorbox.Text = "Connecting...";
             //setupToolStripMenuItem.Enabled = false;
             connectToolStripMenuItem.Enabled = false;
