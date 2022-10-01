@@ -676,6 +676,7 @@ namespace EasyBus_Modbus_Scanner
         }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
+            errorbox.Text = "Connecting...";
             //setupToolStripMenuItem.Enabled = false;
             connectToolStripMenuItem.Enabled = false;
             bConnect.Enabled = false;
@@ -700,6 +701,8 @@ namespace EasyBus_Modbus_Scanner
             bStop.Enabled = false;
 
             polltimer.Enabled = false;
+            errorbox.ForeColor = System.Drawing.Color.Red;
+            errorbox.Text = "Disconnected";
         }
 
         //Gets updated cell value and sends it off to write the data
