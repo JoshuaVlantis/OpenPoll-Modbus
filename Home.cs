@@ -676,6 +676,8 @@ namespace EasyBus_Modbus_Scanner
         }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
+            errorbox.ForeColor = System.Drawing.Color.Black;
+            errorbox.Text = "Connecting...";
             //setupToolStripMenuItem.Enabled = false;
             connectToolStripMenuItem.Enabled = false;
             bConnect.Enabled = false;
@@ -693,13 +695,15 @@ namespace EasyBus_Modbus_Scanner
 
         private void bStop_Click(object sender, EventArgs e)
         {
+            polltimer.Enabled = false;
+            modbusClient.Disconnect();
             //setupToolStripMenuItem.Enabled = true;
             connectToolStripMenuItem.Enabled = true;
-            modbusClient.Disconnect();
             bConnect.Enabled = true;
             bStop.Enabled = false;
 
-            polltimer.Enabled = false;
+            errorbox.ForeColor = System.Drawing.Color.Red;
+            errorbox.Text = "Disconnected";
         }
 
         //Gets updated cell value and sends it off to write the data
@@ -746,10 +750,11 @@ namespace EasyBus_Modbus_Scanner
                 {
                     writenumber = Convert.ToInt16(DataGrid.Rows[CurrentRow].Cells[2].Value);
                 }
+
+                WriteData();
             }
             catch
             { }
-            WriteData();
         }
 
         private void GCcall_Tick(object sender, EventArgs e)
