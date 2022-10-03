@@ -61,3 +61,29 @@ C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner
 C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
 C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.exe
 C:\Users\Stefan\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\EasyBus-Modbus Scanner.exe.config
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.dll
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.WinForms.dll
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.Wpf.dll
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.pdb
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.xml
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.WinForms.pdb
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.WinForms.xml
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.Wpf.pdb
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\bin\Debug\LiveCharts.Wpf.xml
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.csproj.AssemblyReference.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.csproj.SuggestedBindingRedirects.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.BinaryEditor.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.ConnectionSetup.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.Home.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.LiveChart.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.ModbusScraper.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.Properties.Resources.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus_Modbus_Scanner.Setup.resources
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.csproj.GenerateResource.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.csproj.CoreCompileInputs.cache
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.exe
+C:\Users\Stefan\Documents\GitHub\Modbus-Scraper-demo\obj\Debug\EasyBus-Modbus Scanner.pdb

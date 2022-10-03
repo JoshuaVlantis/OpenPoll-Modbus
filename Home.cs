@@ -33,6 +33,9 @@ namespace EasyBus_Modbus_Scanner
         int writenumber;
         ulong PollCount;
 
+        int currentMouseOverRow;
+        int currentMouseOverColumn;
+
         ModbusClient modbusClient = new ModbusClient(Properties.Settings.Default.IPAddress, Properties.Settings.Default.ServerPort); //Ip-Address and Port of Modbus-TCP-Server
 
         public Home()
@@ -776,8 +779,8 @@ namespace EasyBus_Modbus_Scanner
                 ContextMenu m = new ContextMenu();
 
 
-                int currentMouseOverRow = DataGrid.HitTest(e.X, e.Y).RowIndex;
-                int currentMouseOverColumn = DataGrid.HitTest(e.X, e.Y).ColumnIndex;
+                currentMouseOverRow = DataGrid.HitTest(e.X, e.Y).RowIndex;
+                currentMouseOverColumn = DataGrid.HitTest(e.X, e.Y).ColumnIndex;
 
                 //If mouse is over the fourth column
 
@@ -792,12 +795,14 @@ namespace EasyBus_Modbus_Scanner
                         m.MenuItems.Add(new MenuItem("Unsigned"));
                         m.MenuItems.Add(new MenuItem("Hex"));
                         m.MenuItems.Add(new MenuItem("Binary"));
+                        m.MenuItems.Add(new MenuItem("Trending"));
 
                         // If menu Item is clicked, display a message box.
                         m.MenuItems[0].Click += new EventHandler(Signed);
                         m.MenuItems[1].Click += new EventHandler(Unsigned);
                         m.MenuItems[2].Click += new EventHandler(Hex);
                         m.MenuItems[3].Click += new EventHandler(Binary);
+                        m.MenuItems[4].Click += OnTrendClick;
                     }
 
                 }
@@ -901,6 +906,17 @@ namespace EasyBus_Modbus_Scanner
 
                 tid1.Start();
             }
+        }
+
+        public int getValue(int currentMouseOverRow, int currentMouseOverColumn)
+        {
+            return Convert.ToInt32(DataGrid.Rows[currentMouseOverRow].Cells[currentMouseOverColumn].Value);
+        }
+
+        private void OnTrendClick(object sender, EventArgs e)
+        {
+            Form trend = new LiveChart(currentMouseOverRow,currentMouseOverColumn);
+            trend.Show();
         }
     }
 }

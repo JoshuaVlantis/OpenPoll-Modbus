@@ -36,6 +36,15 @@
     <Reference Include="EasyModbus">
       <HintPath>..\..\DLLS\Modbus\EasyModbus.dll</HintPath>
     </Reference>
+    <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
+      <HintPath>packages\LiveCharts.0.9.7\lib\net45\LiveCharts.dll</HintPath>
+    </Reference>
+    <Reference Include="LiveCharts.WinForms, Version=0.9.7.1, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
+      <HintPath>packages\LiveCharts.WinForms.0.9.7.1\lib\net45\LiveCharts.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="LiveCharts.Wpf, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
+      <HintPath>packages\LiveCharts.Wpf.0.9.7\lib\net45\LiveCharts.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -72,6 +81,12 @@
     <Compile Include="Home.Designer.cs">
       <DependentUpon>Home.cs</DependentUpon>
     </Compile>
+    <Compile Include="LiveChart.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LiveChart.designer.cs">
+      <DependentUpon>LiveChart.cs</DependentUpon>
+    </Compile>
     <Compile Include="ModbusScraper.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -101,6 +116,9 @@
     <EmbeddedResource Include="Home.resx">
       <DependentUpon>Home.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="LiveChart.resx">
+      <DependentUpon>LiveChart.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ModbusScraper.resx">
       <DependentUpon>ModbusScraper.cs</DependentUpon>
     </EmbeddedResource>
@@ -117,6 +135,7 @@
     <EmbeddedResource Include="Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
