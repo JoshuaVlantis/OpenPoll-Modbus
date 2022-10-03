@@ -889,7 +889,8 @@ namespace EasyBus_Modbus_Scanner
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-
+            Form trnd = new Trending();
+            trnd.Show();
         }
 
         private void button1_Click(object sender, EventArgs e)
