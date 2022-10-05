@@ -33,9 +33,6 @@ namespace EasyBus_Modbus_Scanner
         int writenumber;
         ulong PollCount;
 
-        int currentMouseOverRow;
-        int currentMouseOverColumn;
-
         ModbusClient modbusClient = new ModbusClient(Properties.Settings.Default.IPAddress, Properties.Settings.Default.ServerPort); //Ip-Address and Port of Modbus-TCP-Server
 
         public Home()
@@ -779,8 +776,8 @@ namespace EasyBus_Modbus_Scanner
                 ContextMenu m = new ContextMenu();
 
 
-                currentMouseOverRow = DataGrid.HitTest(e.X, e.Y).RowIndex;
-                currentMouseOverColumn = DataGrid.HitTest(e.X, e.Y).ColumnIndex;
+                int currentMouseOverRow = DataGrid.HitTest(e.X, e.Y).RowIndex;
+                int currentMouseOverColumn = DataGrid.HitTest(e.X, e.Y).ColumnIndex;
 
                 //If mouse is over the fourth column
 
@@ -890,12 +887,6 @@ namespace EasyBus_Modbus_Scanner
             stup.Show();
         }
 
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
-        {
-            Form chart = new LiveChart(0,2,1,2,2,2,3,2);
-            chart.Show();
-        }
-
         private void button1_Click(object sender, EventArgs e)
         {
             if (!Application.OpenForms.OfType<Setup>().Any())
@@ -907,9 +898,10 @@ namespace EasyBus_Modbus_Scanner
             }
         }
 
-        public double getValue(int currentMouseOverRow, int currentMouseOverColumn)
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            return Convert.ToDouble(DataGrid.Rows[currentMouseOverRow].Cells[currentMouseOverColumn].Value);
+            Form lv = new LiveChart();
+            lv.Show();
         }
     }
 }
