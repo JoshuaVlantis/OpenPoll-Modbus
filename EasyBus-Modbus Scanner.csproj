@@ -87,12 +87,6 @@
     <Compile Include="Home.Designer.cs">
       <DependentUpon>Home.cs</DependentUpon>
     </Compile>
-    <Compile Include="LiveChart.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="LiveChart.designer.cs">
-      <DependentUpon>LiveChart.cs</DependentUpon>
-    </Compile>
     <Compile Include="ModbusScraper.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -8,7 +8,6 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Forms;
 using LiveCharts;
 using LiveCharts.Configurations;
@@ -32,7 +31,7 @@ namespace EasyBus_Modbus_Scanner
         int ColumnIndex4;
         int index = 0;
 
-        public LiveChart(int RowIndex, int ColumnIndex)
+        public LiveChart()
         {
             this.RowIndex = RowIndex;
             this.ColumnIndex = ColumnIndex;
@@ -52,18 +51,11 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
             };
-
-            cartesianChart1.DisableAnimations = true;
-            cartesianChart1.DataTooltip = null;
-            cartesianChart1.Hoverable = false;
-            cartesianChart1.LegendLocation = LegendLocation.Right;
-            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
 
             cartesianChart1.AxisX.Add(new Axis
             {
@@ -112,26 +104,18 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 }
             };
-
-            cartesianChart1.DisableAnimations = true;
-            cartesianChart1.DataTooltip = null;
-            cartesianChart1.Hoverable = false;
-            cartesianChart1.LegendLocation = LegendLocation.Right;
-            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
 
             cartesianChart1.AxisX.Add(new Axis
             {
@@ -183,34 +167,25 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex2),
                     Values = ChartValue3,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 }
             };
-
-            cartesianChart1.DisableAnimations = true;
-            cartesianChart1.DataTooltip = null;
-            cartesianChart1.Hoverable = false;
-            cartesianChart1.LegendLocation = LegendLocation.Right;
-            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
 
             cartesianChart1.AxisX.Add(new Axis
             {
@@ -265,42 +240,32 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex2),
                     Values = ChartValue3,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex3),
                     Values = ChartValue4,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 }
             };
-
-            cartesianChart1.DisableAnimations = true;
-            cartesianChart1.DataTooltip = null;
-            cartesianChart1.Hoverable = false;
-            cartesianChart1.LegendLocation = LegendLocation.Right;
-            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
 
             cartesianChart1.AxisX.Add(new Axis
             {
@@ -358,50 +323,39 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex2),
                     Values = ChartValue3,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex3),
                     Values = ChartValue4,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
-                    Title = String.Format("Index {0}", RowIndex4),
                     Values = ChartValue5,
-                    PointGeometrySize = 0,
+                    PointGeometrySize = 1,
                     StrokeThickness = 1
                 }
             };
-
-            cartesianChart1.DisableAnimations = true;
-            cartesianChart1.DataTooltip = null;
-            cartesianChart1.Hoverable = false;
-            cartesianChart1.LegendLocation = LegendLocation.Right;
-            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
 
             cartesianChart1.AxisX.Add(new Axis
             {
@@ -447,11 +401,12 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                //Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                Value = 5
             };
 
             ChartValue.Insert(index, mm);
-            
+
             SetAxisLimits(now);
             index = index++;
         }
@@ -463,7 +418,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                //Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                Value = 5
             };
 
             ChartValue.Insert(index, mm);
@@ -471,7 +427,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm1 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                //Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                Value = 5
             };
 
             ChartValue2.Insert(index, mm1);
@@ -487,7 +444,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                //Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                Value = 5
             };
 
             ChartValue.Insert(index, mm);
@@ -495,7 +453,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm1 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                //Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                Value = 5
             };
 
             ChartValue2.Insert(index, mm1);
@@ -503,7 +462,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm2 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+                //Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+                Value = 5
             };
 
             ChartValue3.Insert(index, mm2);
@@ -519,7 +479,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                //Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                Value = 5
             };
 
             ChartValue.Insert(index, mm);
@@ -527,7 +488,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm1 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                //Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                Value = 5
             };
 
             ChartValue2.Insert(index, mm1);
@@ -535,7 +497,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm2 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+                //Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+                Value = 5
             };
 
             ChartValue3.Insert(index, mm2);
@@ -543,7 +506,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm3 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex3, ColumnIndex3)
+                //Value = HomeVar.home.getValue(RowIndex3, ColumnIndex3)
+                Value = 5
             };
 
             ChartValue4.Insert(index, mm3);
@@ -559,7 +523,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                //Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+                Value = 5
             };
 
             ChartValue.Insert(index, mm);
@@ -567,7 +532,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm1 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                //Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+                Value = 5
             };
 
             ChartValue2.Insert(index, mm1);
@@ -575,7 +541,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm2 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+                //Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+                Value = 5
             };
 
             ChartValue3.Insert(index, mm2);
@@ -583,7 +550,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm3 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex3, ColumnIndex3)
+                //Value = HomeVar.home.getValue(RowIndex3, ColumnIndex3)
+                Value = 5
             };
 
             ChartValue4.Insert(index, mm3);
@@ -591,7 +559,8 @@ namespace EasyBus_Modbus_Scanner
             MeasureModel mm4 = new MeasureModel
             {
                 DateTime = now,
-                Value = HomeVar.home.getValue(RowIndex4, ColumnIndex4)
+                //Value = HomeVar.home.getValue(RowIndex4, ColumnIndex4)
+                Value = 5
             };
 
             ChartValue5.Insert(index, mm4);
@@ -607,7 +576,10 @@ namespace EasyBus_Modbus_Scanner
             public double Value { get; set; }
         }
 
-        // Possible class for adding ranges instead of individually
+        private void LiveChart_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 
 }
