@@ -75,6 +75,12 @@
     <Compile Include="BinaryEditor.Designer.cs">
       <DependentUpon>BinaryEditor.cs</DependentUpon>
     </Compile>
+    <Compile Include="LiveChart.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LiveChart.Designer.cs">
+      <DependentUpon>LiveChart.cs</DependentUpon>
+    </Compile>
     <Compile Include="Home.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -95,12 +101,6 @@
     <Compile Include="Setup.Designer.cs">
       <DependentUpon>Setup.cs</DependentUpon>
     </Compile>
-    <Compile Include="Trending.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Trending.Designer.cs">
-      <DependentUpon>Trending.cs</DependentUpon>
-    </Compile>
     <EmbeddedResource Include="BinaryEditor.resx">
       <DependentUpon>BinaryEditor.cs</DependentUpon>
     </EmbeddedResource>
@@ -109,6 +109,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Home.resx">
       <DependentUpon>Home.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LiveChart.resx">
+      <DependentUpon>LiveChart.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ModbusScraper.resx">
       <DependentUpon>ModbusScraper.cs</DependentUpon>
@@ -125,9 +128,6 @@
     </Compile>
     <EmbeddedResource Include="Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Trending.resx">
-      <DependentUpon>Trending.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

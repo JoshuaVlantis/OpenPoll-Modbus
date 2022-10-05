@@ -887,12 +887,6 @@ namespace EasyBus_Modbus_Scanner
             stup.Show();
         }
 
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
-        {
-            Form trnd = new Trending();
-            trnd.Show();
-        }
-
         private void button1_Click(object sender, EventArgs e)
         {
             if (!Application.OpenForms.OfType<Setup>().Any())
@@ -902,6 +896,12 @@ namespace EasyBus_Modbus_Scanner
 
                 tid1.Start();
             }
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            Form lv = new LiveChart();
+            lv.Show();
         }
     }
 }

@@ -81,9 +81,9 @@ C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanne
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.ModbusScraper.resources
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.Properties.Resources.resources
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.Setup.resources
-C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.Trending.resources
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.GenerateResource.cache
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.CoreCompileInputs.cache
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.exe
 C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\JoshuaV\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.LiveChart.resources
