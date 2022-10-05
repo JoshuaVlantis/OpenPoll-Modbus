@@ -33,22 +33,21 @@
             // 
             // cartesianChart1
             // 
-            this.cartesianChart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cartesianChart1.Location = new System.Drawing.Point(0, 0);
+            this.cartesianChart1.Location = new System.Drawing.Point(3, 7);
             this.cartesianChart1.Name = "cartesianChart1";
-            this.cartesianChart1.Size = new System.Drawing.Size(657, 463);
-            this.cartesianChart1.TabIndex = 1;
+            this.cartesianChart1.Size = new System.Drawing.Size(795, 444);
+            this.cartesianChart1.TabIndex = 0;
             this.cartesianChart1.Text = "cartesianChart1";
             // 
-            // ConstantChanges
+            // LiveChart
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(657, 463);
+            this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.cartesianChart1);
-            this.Name = "ConstantChanges";
-            this.Text = "ConstantChanges";
+            this.Name = "LiveChart";
+            this.Text = "Form1";
+            this.Load += new System.EventHandler(this.LiveChart_Load);
             this.ResumeLayout(false);
 
         }
