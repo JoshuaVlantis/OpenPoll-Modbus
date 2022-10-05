@@ -296,7 +296,7 @@ namespace EasyBus_Modbus_Scanner
                 }
             };
 
-            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DisableAnimations = false;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
             cartesianChart1.LegendLocation = LegendLocation.Right;
@@ -397,7 +397,7 @@ namespace EasyBus_Modbus_Scanner
                 }
             };
 
-            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DisableAnimations = false;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
             cartesianChart1.LegendLocation = LegendLocation.Right;
@@ -614,7 +614,5 @@ namespace EasyBus_Modbus_Scanner
 
         }
     }
-
-
 }
 

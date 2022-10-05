@@ -113,3 +113,13 @@ C:\Users\Stefan\Documents\GitHub\Modbus\obj\Debug\EasyBus-Modbus Scanner.csproj.
 C:\Users\Stefan\Documents\GitHub\Modbus\obj\Debug\EasyBus-Modbus Scanner.csproj.CopyComplete
 C:\Users\Stefan\Documents\GitHub\Modbus\obj\Debug\EasyBus-Modbus Scanner.exe
 C:\Users\Stefan\Documents\GitHub\Modbus\obj\Debug\EasyBus-Modbus Scanner.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.dll
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.WinForms.dll
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.Wpf.dll
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.xml
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.WinForms.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.WinForms.xml
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.Wpf.pdb
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\bin\Debug\LiveCharts.Wpf.xml
+C:\Users\Joshua\Documents\GitHub\Modbus-Scraper\obj\Debug\EasyBus_Modbus_Scanner.LiveChart.resources
