@@ -909,9 +909,9 @@ namespace EasyBus_Modbus_Scanner
             }
         }
 
-        public int getValue(int currentMouseOverRow, int currentMouseOverColumn)
+        public double getValue(int currentMouseOverRow, int currentMouseOverColumn)
         {
-            return Convert.ToInt32(DataGrid.Rows[currentMouseOverRow].Cells[currentMouseOverColumn].Value);
+            return Convert.ToDouble(DataGrid.Rows[currentMouseOverRow].Cells[currentMouseOverColumn].Value);
         }
 
         private void OnTrendClick(object sender, EventArgs e)

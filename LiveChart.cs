@@ -52,11 +52,14 @@ namespace EasyBus_Modbus_Scanner
                 new LineSeries
                 {
                     Values = ChartValue,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
             };
 
+            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DataTooltip = null;
+            cartesianChart1.Hoverable = false;
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -105,18 +108,21 @@ namespace EasyBus_Modbus_Scanner
                 new LineSeries
                 {
                     Values = ChartValue,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue2,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 }
             };
 
+            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DataTooltip = null;
+            cartesianChart1.Hoverable = false;
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -168,25 +174,28 @@ namespace EasyBus_Modbus_Scanner
                 new LineSeries
                 {
                     Values = ChartValue,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue2,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue3,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 }
             };
 
+            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DataTooltip = null;
+            cartesianChart1.Hoverable = false;
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -241,32 +250,35 @@ namespace EasyBus_Modbus_Scanner
                 new LineSeries
                 {
                     Values = ChartValue,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue2,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue3,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue4,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 }
             };
 
+            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DataTooltip = null;
+            cartesianChart1.Hoverable = false;
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -324,39 +336,42 @@ namespace EasyBus_Modbus_Scanner
                 new LineSeries
                 {
                     Values = ChartValue,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue2,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue3,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue4,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 },
 
                 new LineSeries
                 {
                     Values = ChartValue5,
-                    PointGeometrySize = 1,
+                    PointGeometrySize = 0,
                     StrokeThickness = 1
                 }
             };
 
+            cartesianChart1.DisableAnimations = true;
+            cartesianChart1.DataTooltip = null;
+            cartesianChart1.Hoverable = false;
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -560,6 +575,8 @@ namespace EasyBus_Modbus_Scanner
             public System.DateTime DateTime { get; set; }
             public double Value { get; set; }
         }
+
+        // Possible class for adding ranges instead of individually
     }
 
 }
