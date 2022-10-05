@@ -898,10 +898,15 @@ namespace EasyBus_Modbus_Scanner
             }
         }
 
+        public double getValue(int currentMouseOverRow, int currentMouseOverColumn)
+        {
+            return Convert.ToDouble(DataGrid.Rows[currentMouseOverRow].Cells[currentMouseOverColumn].Value);
+        }
+
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            Form lv = new LiveChart();
-            lv.Show();
+            Form chart = new LiveChart(0, 2, 1, 2, 2, 2, 3, 2);
+            chart.Show();
         }
     }
 }
