@@ -894,7 +894,8 @@ namespace EasyBus_Modbus_Scanner
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-
+            Form chart = new LiveChart(0,2,1,2,2,2,3,2);
+            chart.Show();
         }
 
         private void button1_Click(object sender, EventArgs e)

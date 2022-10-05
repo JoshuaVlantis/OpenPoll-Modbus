@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,6 +21,15 @@ namespace EasyBus_Modbus_Scanner
     {
         int RowIndex;
         int ColumnIndex;
+        int RowIndex1;
+        int ColumnIndex1;
+        int RowIndex2;
+        int ColumnIndex2;
+        int RowIndex3;
+        int ColumnIndex3;
+        int RowIndex4;
+        int ColumnIndex4;
+        int index = 0;
 
         public LiveChart(int RowIndex, int ColumnIndex)
         {
@@ -27,16 +37,6 @@ namespace EasyBus_Modbus_Scanner
             this.ColumnIndex = ColumnIndex;
 
             InitializeComponent();
-
-            //To handle live data easily, in this case we built a specialized type
-            //the MeasureModel class, it only contains 2 properties
-            //DateTime and Value
-            //We need to configure LiveCharts to handle MeasureModel class
-            //The next code configures MEasureModel  globally, this means
-            //that livecharts learns to plot MeasureModel and will use this config every time
-            //a ChartValues instance uses this type.
-            //this code ideally should only run once, when application starts is reccomended.
-            //you can configure series in many ways, learn more at http://lvcharts.net/App/examples/v1/wpf/Types%20and%20Configuration
 
             var mapper = Mappers.Xy<MeasureModel>()
                 .X(model => model.DateTime.Ticks)   //use DateTime.Ticks as X
@@ -46,16 +46,317 @@ namespace EasyBus_Modbus_Scanner
             Charting.For<MeasureModel>(mapper);
 
             //the ChartValues property will store our values array
-            ChartValues = new ChartValues<MeasureModel>();
+            ChartValue = new ChartValues<MeasureModel>();
             cartesianChart1.Series = new SeriesCollection
             {
                 new LineSeries
                 {
-                    Values = ChartValues,
-                    PointGeometrySize = 5,
-                    StrokeThickness = 2
+                    Values = ChartValue,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+            };
+
+            cartesianChart1.AxisX.Add(new Axis
+            {
+                DisableAnimations = true,
+                LabelFormatter = value => new System.DateTime((long)value).ToString("mm:ss"),
+                Separator = new Separator
+                {
+                    Step = TimeSpan.FromSeconds(1).Ticks
+                }
+            });
+
+            var now = System.DateTime.Now;
+            cartesianChart1.AxisX[0].MinValue = now.Ticks;
+            SetAxisLimits(System.DateTime.Now);
+
+            //The next code simulates data changes every 500 ms
+            Timer = new Timer
+            {
+                Interval = 1000
+            };
+            Timer.Tick += TimerOnTick;
+            Timer.Start();
+        }
+
+        // 2 series
+        public LiveChart(int RowIndex, int ColumnIndex, int RowIndex1, int ColumnIndex1)
+        {
+            this.RowIndex1 = RowIndex1;
+            this.ColumnIndex1 = ColumnIndex1;
+            this.ColumnIndex = ColumnIndex;
+            this.RowIndex = RowIndex;
+
+            InitializeComponent();
+
+            var mapper = Mappers.Xy<MeasureModel>()
+                .X(model => model.DateTime.Ticks)   //use DateTime.Ticks as X
+                .Y(model => model.Value);           //use the value property as Y
+
+            //lets save the mapper globally.
+            Charting.For<MeasureModel>(mapper);
+
+            //the ChartValues property will store our values array
+            ChartValue = new ChartValues<MeasureModel>();
+            ChartValue2 = new ChartValues<MeasureModel>();
+            cartesianChart1.Series = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Values = ChartValue,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue2,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
                 }
             };
+
+            cartesianChart1.AxisX.Add(new Axis
+            {
+                DisableAnimations = true,
+                LabelFormatter = value => new System.DateTime((long)value).ToString("mm:ss"),
+                Separator = new Separator
+                {
+                    Step = TimeSpan.FromSeconds(1).Ticks
+                }
+            });
+
+            var now = System.DateTime.Now;
+            cartesianChart1.AxisX[0].MinValue = now.Ticks;
+            SetAxisLimits(System.DateTime.Now);
+
+            //The next code simulates data changes every 500 ms
+            Timer = new Timer
+            {
+                Interval = 1000
+            };
+            Timer.Tick += TimerOnTick1;
+            Timer.Start();
+        }
+
+        //3
+        public LiveChart(int RowIndex, int ColumnIndex, int RowIndex1, int ColumnIndex1, int RowIndex2, int ColumnIndex2)
+        {
+            this.RowIndex1 = RowIndex1;
+            this.ColumnIndex1 = ColumnIndex1;
+            this.ColumnIndex = ColumnIndex;
+            this.RowIndex = RowIndex;
+            this.RowIndex2 = RowIndex2;
+            this.ColumnIndex2 = ColumnIndex2;
+
+            InitializeComponent();
+
+            var mapper = Mappers.Xy<MeasureModel>()
+                .X(model => model.DateTime.Ticks)   //use DateTime.Ticks as X
+                .Y(model => model.Value);           //use the value property as Y
+
+            //lets save the mapper globally.
+            Charting.For<MeasureModel>(mapper);
+
+            //the ChartValues property will store our values array
+            ChartValue = new ChartValues<MeasureModel>();
+            ChartValue2 = new ChartValues<MeasureModel>();
+            ChartValue3 = new ChartValues<MeasureModel>();
+            cartesianChart1.Series = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Values = ChartValue,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue2,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue3,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                }
+            };
+
+            cartesianChart1.AxisX.Add(new Axis
+            {
+                DisableAnimations = true,
+                LabelFormatter = value => new System.DateTime((long)value).ToString("mm:ss"),
+                Separator = new Separator
+                {
+                    Step = TimeSpan.FromSeconds(1).Ticks
+                }
+            });
+
+            var now = System.DateTime.Now;
+            cartesianChart1.AxisX[0].MinValue = now.Ticks;
+            SetAxisLimits(System.DateTime.Now);
+
+            //The next code simulates data changes every 500 ms
+            Timer = new Timer
+            {
+                Interval = 1000
+            };
+            Timer.Tick += TimerOnTick2;
+            Timer.Start();
+        }
+
+        //4
+        public LiveChart(int RowIndex, int ColumnIndex, int RowIndex1, int ColumnIndex1, int RowIndex2, int ColumnIndex2, int RowIndex3, int ColumnIndex3)
+        {
+            this.RowIndex1 = RowIndex1;
+            this.ColumnIndex1 = ColumnIndex1;
+            this.ColumnIndex = ColumnIndex;
+            this.RowIndex = RowIndex;
+            this.RowIndex2 = RowIndex2;
+            this.ColumnIndex2 = ColumnIndex2;
+            this.ColumnIndex3 = ColumnIndex3;
+            this.RowIndex3 = RowIndex3;
+
+            InitializeComponent();
+
+            var mapper = Mappers.Xy<MeasureModel>()
+                .X(model => model.DateTime.Ticks)   //use DateTime.Ticks as X
+                .Y(model => model.Value);           //use the value property as Y
+
+            //lets save the mapper globally.
+            Charting.For<MeasureModel>(mapper);
+
+            //the ChartValues property will store our values array
+            ChartValue = new ChartValues<MeasureModel>();
+            ChartValue2 = new ChartValues<MeasureModel>();
+            ChartValue3 = new ChartValues<MeasureModel>();
+            ChartValue4 = new ChartValues<MeasureModel>();
+            cartesianChart1.Series = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Values = ChartValue,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue2,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue3,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue4,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                }
+            };
+
+            cartesianChart1.AxisX.Add(new Axis
+            {
+                DisableAnimations = true,
+                LabelFormatter = value => new System.DateTime((long)value).ToString("mm:ss"),
+                Separator = new Separator
+                {
+                    Step = TimeSpan.FromSeconds(1).Ticks
+                }
+            });
+
+            var now = System.DateTime.Now;
+            cartesianChart1.AxisX[0].MinValue = now.Ticks;
+            SetAxisLimits(System.DateTime.Now);
+
+            //The next code simulates data changes every 500 ms
+            Timer = new Timer
+            {
+                Interval = 100
+            };
+            Timer.Tick += TimerOnTick3;
+            Timer.Start();
+        }
+
+        //5
+        public LiveChart(int RowIndex, int ColumnIndex, int RowIndex1, int ColumnIndex1, int RowIndex2, int ColumnIndex2, int RowIndex3, int ColumnIndex3, int RowIndex4, int ColumnIndex4)
+        {
+            this.RowIndex1 = RowIndex1;
+            this.ColumnIndex1 = ColumnIndex1;
+            this.ColumnIndex = ColumnIndex;
+            this.RowIndex = RowIndex;
+            this.RowIndex2 = RowIndex2;
+            this.ColumnIndex2 = ColumnIndex2;
+            this.ColumnIndex3 = ColumnIndex3;
+            this.RowIndex3 = RowIndex3;
+            this.RowIndex4 = RowIndex4;
+            this.ColumnIndex4 = RowIndex4;
+
+            InitializeComponent();
+
+            var mapper = Mappers.Xy<MeasureModel>()
+                .X(model => model.DateTime.Ticks)   //use DateTime.Ticks as X
+                .Y(model => model.Value);           //use the value property as Y
+
+            //lets save the mapper globally.
+            Charting.For<MeasureModel>(mapper);
+
+            //the ChartValues property will store our values array
+            ChartValue = new ChartValues<MeasureModel>();
+            ChartValue2 = new ChartValues<MeasureModel>();
+            ChartValue3 = new ChartValues<MeasureModel>();
+            ChartValue4 = new ChartValues<MeasureModel>();
+            ChartValue5 = new ChartValues<MeasureModel>();
+            cartesianChart1.Series = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Values = ChartValue,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue2,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue3,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue4,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                },
+
+                new LineSeries
+                {
+                    Values = ChartValue5,
+                    PointGeometrySize = 1,
+                    StrokeThickness = 1
+                }
+            };
+
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -75,14 +376,18 @@ namespace EasyBus_Modbus_Scanner
             {
                 Interval = 500
             };
-            Timer.Tick += TimerOnTick;
-            R = new Random();
+            Timer.Tick += TimerOnTick4;
             Timer.Start();
         }
 
-        public ChartValues<MeasureModel> ChartValues { get; set; }
+
+        //---------------------------------------------//
+        public ChartValues<MeasureModel> ChartValue { get; set; }
+        public ChartValues<MeasureModel> ChartValue2 { get; set; }
+        public ChartValues<MeasureModel> ChartValue3 { get; set; }
+        public ChartValues<MeasureModel> ChartValue4 { get; set; }
+        public ChartValues<MeasureModel> ChartValue5 { get; set; }
         public Timer Timer { get; set; }
-        public Random R { get; set; }
 
         private void SetAxisLimits(System.DateTime now)
         {
@@ -93,19 +398,169 @@ namespace EasyBus_Modbus_Scanner
         {
             var now = System.DateTime.Now;
 
-            ChartValues.Add(new MeasureModel
+            MeasureModel mm = new MeasureModel
             {
                 DateTime = now,
                 Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
-            });
+            };
+
+            ChartValue.Insert(index, mm);
+            
+            SetAxisLimits(now);
+            index = index++;
+        }
+
+        public void TimerOnTick1(object sender, EventArgs eventArgs)
+        {
+            var now = System.DateTime.Now;
+
+            MeasureModel mm = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+            };
+
+            ChartValue.Insert(index, mm);
+
+            MeasureModel mm1 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+            };
+
+            ChartValue2.Insert(index, mm1);
 
             SetAxisLimits(now);
+            index = index++;
+        }
+
+        public void TimerOnTick2(object sender, EventArgs eventArgs)
+        {
+            var now = System.DateTime.Now;
+
+            MeasureModel mm = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+            };
+
+            ChartValue.Insert(index, mm);
+
+            MeasureModel mm1 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+            };
+
+            ChartValue2.Insert(index, mm1);
+
+            MeasureModel mm2 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+            };
+
+            ChartValue3.Insert(index, mm2);
+
+            SetAxisLimits(now);
+            index = index++;
+        }
+
+        public void TimerOnTick3(object sender, EventArgs eventArgs)
+        {
+            var now = System.DateTime.Now;
+
+            MeasureModel mm = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+            };
+
+            ChartValue.Insert(index, mm);
+
+            MeasureModel mm1 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+            };
+
+            ChartValue2.Insert(index, mm1);
+
+            MeasureModel mm2 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+            };
+
+            ChartValue3.Insert(index, mm2);
+
+            MeasureModel mm3 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex3, ColumnIndex3)
+            };
+
+            ChartValue4.Insert(index, mm3);
+
+            SetAxisLimits(now);
+            index = index++;
+        }
+
+        public void TimerOnTick4(object sender, EventArgs eventArgs)
+        {
+            var now = System.DateTime.Now;
+
+            MeasureModel mm = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex, ColumnIndex)
+            };
+
+            ChartValue.Insert(index, mm);
+
+            MeasureModel mm1 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex1, RowIndex2)
+            };
+
+            ChartValue2.Insert(index, mm1);
+
+            MeasureModel mm2 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex2, ColumnIndex2)
+            };
+
+            ChartValue3.Insert(index, mm2);
+
+            MeasureModel mm3 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex3, ColumnIndex3)
+            };
+
+            ChartValue4.Insert(index, mm3);
+
+            MeasureModel mm4 = new MeasureModel
+            {
+                DateTime = now,
+                Value = HomeVar.home.getValue(RowIndex4, ColumnIndex4)
+            };
+
+            ChartValue5.Insert(index, mm4);
+
+            SetAxisLimits(now);
+            index = index++;
+        }
+
+
+        public class MeasureModel
+        {
+            public System.DateTime DateTime { get; set; }
+            public double Value { get; set; }
         }
     }
 
-    public class MeasureModel
-    {
-        public System.DateTime DateTime { get; set; }
-        public double Value { get; set; }
-    }
 }
+
