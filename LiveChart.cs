@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 using LiveCharts;
 using LiveCharts.Configurations;
@@ -51,6 +52,7 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -60,6 +62,9 @@ namespace EasyBus_Modbus_Scanner
             cartesianChart1.DisableAnimations = true;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
+            cartesianChart1.LegendLocation = LegendLocation.Right;
+            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
+
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -107,6 +112,7 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -114,6 +120,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -123,6 +130,9 @@ namespace EasyBus_Modbus_Scanner
             cartesianChart1.DisableAnimations = true;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
+            cartesianChart1.LegendLocation = LegendLocation.Right;
+            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
+
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -173,6 +183,7 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -180,6 +191,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -187,6 +199,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex2),
                     Values = ChartValue3,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -196,6 +209,9 @@ namespace EasyBus_Modbus_Scanner
             cartesianChart1.DisableAnimations = true;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
+            cartesianChart1.LegendLocation = LegendLocation.Right;
+            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
+
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -249,6 +265,7 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -256,6 +273,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -263,6 +281,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex2),
                     Values = ChartValue3,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -270,6 +289,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex3),
                     Values = ChartValue4,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -279,6 +299,9 @@ namespace EasyBus_Modbus_Scanner
             cartesianChart1.DisableAnimations = true;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
+            cartesianChart1.LegendLocation = LegendLocation.Right;
+            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
+
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
@@ -335,6 +358,7 @@ namespace EasyBus_Modbus_Scanner
             {
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex),
                     Values = ChartValue,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -342,6 +366,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex1),
                     Values = ChartValue2,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -349,6 +374,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex2),
                     Values = ChartValue3,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -356,6 +382,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex3),
                     Values = ChartValue4,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -363,6 +390,7 @@ namespace EasyBus_Modbus_Scanner
 
                 new LineSeries
                 {
+                    Title = String.Format("Index {0}", RowIndex4),
                     Values = ChartValue5,
                     PointGeometrySize = 0,
                     StrokeThickness = 1
@@ -372,6 +400,9 @@ namespace EasyBus_Modbus_Scanner
             cartesianChart1.DisableAnimations = true;
             cartesianChart1.DataTooltip = null;
             cartesianChart1.Hoverable = false;
+            cartesianChart1.LegendLocation = LegendLocation.Right;
+            cartesianChart1.DefaultLegend.Visibility = Visibility.Visible;
+
             cartesianChart1.AxisX.Add(new Axis
             {
                 DisableAnimations = true,
