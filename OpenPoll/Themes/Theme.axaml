@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        ╔══════════════════════════════════════════════════════════════════╗
+        ║  OpenPoll design tokens — industrial precision instrument         ║
+        ║  Deep blue-slate surfaces, oscilloscope-teal accent, IBM Plex.   ║
+        ╚══════════════════════════════════════════════════════════════════╝
+    -->
+
+    <!-- ── Surfaces (depth via layered tonal shifts, not pure black) ── -->
+    <Color x:Key="SurfaceBaseColor">#0E1117</Color>
+    <Color x:Key="Surface1Color">#151B26</Color>
+    <Color x:Key="Surface2Color">#1D2331</Color>
+    <Color x:Key="Surface3Color">#252D3D</Color>
+    <Color x:Key="Surface4Color">#2F3849</Color>
+
+    <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
+    <SolidColorBrush x:Key="Surface1Brush" Color="{StaticResource Surface1Color}" />
+    <SolidColorBrush x:Key="Surface2Brush" Color="{StaticResource Surface2Color}" />
+    <SolidColorBrush x:Key="Surface3Brush" Color="{StaticResource Surface3Color}" />
+    <SolidColorBrush x:Key="Surface4Brush" Color="{StaticResource Surface4Color}" />
+
+    <!-- Subtle gradient for hero areas -->
+    <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#161D2A" Offset="0" />
+        <GradientStop Color="#0E1117" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- ── Borders ── -->
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#1F2630" />
+    <SolidColorBrush x:Key="BorderDefaultBrush" Color="#2A3140" />
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="#3B4358" />
+
+    <!-- ── Text ── -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E5E8EE" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#98A1B3" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#5A6378" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#08131B" />
+
+    <!-- ── Accent: oscilloscope-teal ── -->
+    <Color x:Key="AccentColor">#5EEAD4</Color>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#7DEFD9" />
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#3DD3BC" />
+    <SolidColorBrush x:Key="AccentSurfaceBrush" Color="#5EEAD4" Opacity="0.10" />
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#5EEAD4" Opacity="0.40" />
+    <SolidColorBrush x:Key="AccentDimBrush" Color="#5EEAD4" Opacity="0.60" />
+
+    <!-- ── Status (live signal colours) ── -->
+    <SolidColorBrush x:Key="StatusOkBrush" Color="#4ADE80" />
+    <SolidColorBrush x:Key="StatusWarnBrush" Color="#FBBF24" />
+    <SolidColorBrush x:Key="StatusErrBrush" Color="#F87171" />
+    <SolidColorBrush x:Key="StatusIdleBrush" Color="#6B7280" />
+
+    <SolidColorBrush x:Key="StatusOkSurfaceBrush" Color="#4ADE80" Opacity="0.12" />
+    <SolidColorBrush x:Key="StatusOkBorderBrush" Color="#4ADE80" Opacity="0.40" />
+    <SolidColorBrush x:Key="StatusErrSurfaceBrush" Color="#F87171" Opacity="0.12" />
+    <SolidColorBrush x:Key="StatusErrBorderBrush" Color="#F87171" Opacity="0.40" />
+    <SolidColorBrush x:Key="StatusIdleSurfaceBrush" Color="#6B7280" Opacity="0.12" />
+    <SolidColorBrush x:Key="StatusIdleBorderBrush" Color="#6B7280" Opacity="0.40" />
+
+    <!-- DataGrid alt-row tint -->
+    <SolidColorBrush x:Key="DataGridAltRowBrush" Color="#FFFFFF" Opacity="0.025" />
+
+    <!-- ── Typography (IBM Plex pairing — sans for chrome, mono for data) ── -->
+    <FontFamily x:Key="SansFont">IBM Plex Sans, Inter, Segoe UI, sans-serif</FontFamily>
+    <FontFamily x:Key="MonoFont">IBM Plex Mono, JetBrains Mono, Cascadia Code, Consolas, DejaVu Sans Mono, monospace</FontFamily>
+
+</ResourceDictionary>

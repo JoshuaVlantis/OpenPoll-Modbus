@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.ModbusScraperView"
+        Title="Modbus Scraper"
+        Width="640" Height="640"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel>
+
+        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderSubtleBrush}" Padding="12">
+            <StackPanel Spacing="8">
+
+                <Grid ColumnDefinitions="140,*,Auto">
+                    <TextBlock Grid.Column="0" Text="Mode" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" Name="ModeInput" HorizontalAlignment="Stretch"
+                              SelectionChanged="OnModeChanged">
+                        <ComboBoxItem Content="Coils sweep" />
+                        <ComboBoxItem Content="Discrete inputs sweep" />
+                        <ComboBoxItem Content="Holding registers sweep" />
+                        <ComboBoxItem Content="Input registers sweep" />
+                        <ComboBoxItem Content="Search slave IDs" />
+                        <ComboBoxItem Content="Search IP range" />
+                    </ComboBox>
+                </Grid>
+
+                <Grid ColumnDefinitions="140,*">
+                    <TextBlock Grid.Column="0" Name="IpLabel" Text="IP address" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" Name="IpInput" />
+                </Grid>
+
+                <Grid ColumnDefinitions="140,*">
+                    <TextBlock Grid.Column="0" Text="Port" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Name="PortInput"
+                                   Minimum="1" Maximum="65535" Increment="1" FormatString="0" />
+                </Grid>
+
+                <Grid ColumnDefinitions="140,*">
+                    <TextBlock Grid.Column="0" Text="Connection timeout (ms)" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Name="TimeoutInput"
+                                   Minimum="100" Maximum="60000" Increment="100" FormatString="0" />
+                </Grid>
+
+                <Grid Name="SlaveIdRow" ColumnDefinitions="140,*">
+                    <TextBlock Grid.Column="0" Text="Slave ID" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Name="SlaveIdInput"
+                                   Minimum="1" Maximum="247" Increment="1" FormatString="0" />
+                </Grid>
+
+                <Grid ColumnDefinitions="140,*">
+                    <TextBlock Grid.Column="0" Name="StartLabel" Text="Starting register" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Name="StartInput"
+                                   Minimum="0" Maximum="65535" Increment="1" FormatString="0" />
+                </Grid>
+
+                <Grid Name="AmountRow" ColumnDefinitions="140,*">
+                    <TextBlock Grid.Column="0" Name="AmountLabel" Text="Amount" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Column="1" Name="AmountInput"
+                                   Minimum="1" Maximum="65535" Increment="1" FormatString="0" />
+                </Grid>
+
+                <CheckBox Name="ExtremesInput" Content="Show extremes (0 / −32768)" IsChecked="True" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Start" Name="StartButton" Click="OnStart" Width="90" Classes="primary" />
+                    <Button Content="Stop" Name="StopButton" Click="OnStop" Width="90" IsEnabled="False" />
+                    <ProgressBar Name="ProgressView" Minimum="0" Maximum="100" Width="280" VerticalAlignment="Center" />
+                    <TextBlock Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtleBrush}" Padding="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Clear" Click="OnClear" />
+                <Button Content="Save log…" Click="OnSaveLog" />
+                <TextBlock Name="LogPathHint" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <TextBox Name="ResultsView"
+                 Margin="12"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="monospace"
+                 VerticalContentAlignment="Top"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+
+    </DockPanel>
+</Window>

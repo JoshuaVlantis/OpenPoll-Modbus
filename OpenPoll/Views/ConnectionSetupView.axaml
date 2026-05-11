@@ -1,0 +1,88 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.ConnectionSetupView"
+        Title="Connection Setup"
+        Width="440" Height="480"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16" RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+        <StackPanel Grid.Row="0" Orientation="Vertical" Spacing="8">
+            <TextBlock Text="Connection Mode" FontWeight="SemiBold" />
+            <ComboBox Name="ConnectionModeInput" HorizontalAlignment="Stretch"
+                      SelectionChanged="OnConnectionModeChanged">
+                <ComboBoxItem Content="Modbus TCP/IP" />
+                <ComboBoxItem Content="Modbus Serial (RTU)" />
+            </ComboBox>
+        </StackPanel>
+
+        <Border Grid.Row="1" Name="TcpPanel" Margin="0,16,0,0" Padding="12"
+                BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4">
+            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="140,*">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="IP address" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Name="IpInput" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Port" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Name="PortInput" Margin="0,8,0,0"
+                               Minimum="1" Maximum="65535" Increment="1" FormatString="0" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Connection timeout (ms)" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Grid.Row="2" Grid.Column="1" Name="ConnectionTimeoutInput" Margin="0,8,0,0"
+                               Minimum="100" Maximum="60000" Increment="100" FormatString="0" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Name="SerialPanel" Margin="0,16,0,0" Padding="12"
+                BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4" IsVisible="False">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="140,*,Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Serial port" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="0" Grid.Column="1" Name="SerialPortInput" HorizontalAlignment="Stretch" />
+                <Button Grid.Row="0" Grid.Column="2" Content="↻" Click="OnRefreshPorts" Margin="4,0,0,0"
+                        ToolTip.Tip="Re-scan serial ports" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Baud rate" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Name="BaudRateInput" HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                    <ComboBoxItem Content="1200" />
+                    <ComboBoxItem Content="2400" />
+                    <ComboBoxItem Content="4800" />
+                    <ComboBoxItem Content="9600" />
+                    <ComboBoxItem Content="19200" />
+                    <ComboBoxItem Content="38400" />
+                    <ComboBoxItem Content="57600" />
+                    <ComboBoxItem Content="115200" />
+                </ComboBox>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Parity" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Name="ParityInput" HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                    <ComboBoxItem Content="None" />
+                    <ComboBoxItem Content="Odd" />
+                    <ComboBoxItem Content="Even" />
+                    <ComboBoxItem Content="Mark" />
+                    <ComboBoxItem Content="Space" />
+                </ComboBox>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Stop bits" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Name="StopBitsInput" HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                    <ComboBoxItem Content="None" />
+                    <ComboBoxItem Content="One" />
+                    <ComboBoxItem Content="Two" />
+                    <ComboBoxItem Content="OnePointFive" />
+                </ComboBox>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3" Margin="0,16,0,0" Padding="12"
+                BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4">
+            <Grid RowDefinitions="Auto" ColumnDefinitions="140,*">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Polling rate (ms)" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Row="0" Grid.Column="1" Name="PollingRateInput"
+                               Minimum="50" Maximum="60000" Increment="50" FormatString="0" />
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+            <Button Content="Cancel" Click="OnCancel" />
+            <Button Content="Save" Click="OnSave" Classes="primary" IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</Window>

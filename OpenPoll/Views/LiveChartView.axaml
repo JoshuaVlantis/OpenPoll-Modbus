@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+        x:Class="OpenPoll.Views.LiveChartView"
+        Title="Live Chart"
+        Width="900" Height="540"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderSubtleBrush}" Padding="8">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Name="StatusText" VerticalAlignment="Center" Text="" />
+                <Button Content="Pause" Click="OnTogglePause" Name="PauseButton" Width="90" />
+                <Button Content="Clear" Click="OnClear" Width="90" />
+                <TextBlock VerticalAlignment="Center" Text="Window:" />
+                <ComboBox Name="WindowInput" SelectionChanged="OnWindowChanged">
+                    <ComboBoxItem Content="60 s" />
+                    <ComboBoxItem Content="5 min" IsSelected="True" />
+                    <ComboBoxItem Content="15 min" />
+                    <ComboBoxItem Content="1 h" />
+                </ComboBox>
+            </StackPanel>
+        </Border>
+
+        <lvc:CartesianChart Name="Chart" Margin="8" />
+    </DockPanel>
+</Window>

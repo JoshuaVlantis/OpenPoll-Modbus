@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.BinaryEditorView"
+        Title="Binary Editor"
+        Width="640" Height="240"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto">
+
+        <TextBlock Grid.Row="0" Text="Toggle individual bits, then press Send to write the value back."
+                   TextWrapping="Wrap" />
+
+        <UniformGrid Grid.Row="1" Name="BitsGrid" Columns="16" Margin="0,12,0,0" />
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" Margin="0,12,0,0">
+            <TextBlock Text="Decimal:" VerticalAlignment="Center" />
+            <TextBlock Name="DecimalView" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <TextBlock Text="Hex:" VerticalAlignment="Center" Margin="16,0,0,0" />
+            <TextBlock Name="HexView" VerticalAlignment="Center" FontWeight="SemiBold" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="Cancel" Click="OnCancel" />
+            <Button Content="Send" Click="OnSend" Classes="primary" IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</Window>

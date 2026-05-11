@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.TrafficMonitorView"
+        Title="Traffic Monitor"
+        Width="900" Height="500"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBaseBrush}">
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Surface1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="MODBUS TRAFFIC" FontSize="11" FontWeight="Bold"
+                           LetterSpacing="2.5"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+                <Button Content="Clear" Click="OnClear" />
+                <Button Content="Pause" Click="OnTogglePause" Name="PauseButton" />
+                <CheckBox Name="AutoScrollInput" Content="Auto-scroll" IsChecked="True" />
+            </StackPanel>
+        </Border>
+        <DataGrid Name="EventGrid"
+                  CanUserSortColumns="False"
+                  CanUserReorderColumns="False"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="TIME"   Binding="{ReflectionBinding TimestampDisplay}" Width="100" FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="DIR"    Binding="{ReflectionBinding DirectionDisplay}" Width="60"  FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="FUNC"   Binding="{ReflectionBinding FunctionDisplay}"  Width="100" FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="ADDR"   Binding="{ReflectionBinding AddressDisplay}"   Width="80"  FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="DETAIL" Binding="{ReflectionBinding Detail}"           Width="*"   FontFamily="{DynamicResource MonoFont}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

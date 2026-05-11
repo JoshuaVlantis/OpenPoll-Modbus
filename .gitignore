@@ -1,0 +1,33 @@
+# Build output
+bin/
+obj/
+out/
+publish/
+
+# .NET
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Rider / VS / VSCode
+.vs/
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml
+TestResults/
