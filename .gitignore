@@ -31,3 +31,8 @@ coverage/
 *.coverage
 *.coveragexml
 TestResults/
+
+# Local-only reference material (third-party installers + extracted binaries).
+# Not redistributable.
+ExampleProgram/
+
