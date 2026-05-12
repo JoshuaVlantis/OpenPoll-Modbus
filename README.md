@@ -124,4 +124,6 @@ If access is denied, the scanner surfaces the OS error in the status row.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+GPL-3.0-or-later — see [LICENSE](LICENSE).
+
+Earlier history of this project was released under MIT (through v1.1, 2022); from v2.0.0 onward it is licensed under GPL-3.0. Past MIT-licensed contributions retain their notice in the git history.
