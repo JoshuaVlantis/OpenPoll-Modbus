@@ -5,6 +5,13 @@
 #
 # Usage: run-functional-test.sh <platform>
 #   platform: linux-x64 | win-x64
+#
+# Notes:
+#   linux-x64 — fully exercised inside mcr.microsoft.com/dotnet/runtime-deps:8.0.
+#   win-x64   — best-effort under wine64. Wine 9.0 currently cannot load .NET 8
+#               self-contained single-file binaries (CoreCLR HRESULT 0x8007046C),
+#               so the test will fail on stock Wine. Kept here for future runs
+#               against newer Wine or alternative Windows runners.
 
 set -uo pipefail
 
@@ -26,11 +33,11 @@ case "$PLATFORM" in
     PRE_CMD=""
     ;;
   win-x64)
-    IMAGE="debian:bookworm-slim"
-    OPENPOLL_BIN="wine64 /app/OpenPoll.exe"
-    OPENSLAVE_BIN="wine64 /app/OpenSlave.exe"
-    # Install wine on first invocation; the resulting wine prefix lives in $HOME inside the container.
-    PRE_CMD="set -e; export DEBIAN_FRONTEND=noninteractive WINEDEBUG=-all DISPLAY= WINEDLLOVERRIDES='mscoree,mshtml='; apt-get update -qq; apt-get install -y --no-install-recommends -qq wine64 ca-certificates >/dev/null; mkdir -p /tmp/wineprefix; export WINEPREFIX=/tmp/wineprefix; wine64 wineboot --init >/dev/null 2>&1 || true; set +e"
+    IMAGE="ubuntu:24.04"
+    OPENPOLL_BIN="/usr/lib/wine/wine64 /app/OpenPoll.exe"
+    OPENSLAVE_BIN="/usr/lib/wine/wine64 /app/OpenSlave.exe"
+    # Ubuntu's wine64 package only installs the binary under /usr/lib/wine — no /usr/bin symlink.
+    PRE_CMD="set -e; export DEBIAN_FRONTEND=noninteractive WINEDEBUG=-all DISPLAY= WINEDLLOVERRIDES='mscoree,mshtml='; apt-get update -qq; apt-get install -y --no-install-recommends -qq wine64 ca-certificates; mkdir -p /tmp/wineprefix; export WINEPREFIX=/tmp/wineprefix HOME=/tmp; /usr/lib/wine/wine64 wineboot --init >/dev/null 2>&1 || true; set +e"
     ;;
   *)
     echo "FAIL: unknown platform: $PLATFORM (expected linux-x64 or win-x64)" >&2
