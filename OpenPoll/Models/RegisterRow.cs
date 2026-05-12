@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace OpenPoll.Models;
@@ -13,6 +15,11 @@ public sealed class RegisterRow : INotifyPropertyChanged
     private CellDataType _dataType = CellDataType.Signed;
     private int[] _rawWords = Array.Empty<int>();
     private bool _rawBool;
+    private double _scale = 1.0;
+    private double _offset;
+    private int _scalePrecision = 2;
+    private bool _scalingEnabled;
+    private Dictionary<long, string>? _valueNames;
 
     public string Function
     {
@@ -65,6 +72,64 @@ public sealed class RegisterRow : INotifyPropertyChanged
         get => _rawBool;
         set => Set(ref _rawBool, value);
     }
+
+    /// <summary>Linear scale factor: displayed = raw * Scale + Offset.</summary>
+    public double Scale
+    {
+        get => _scale;
+        set => Set(ref _scale, value);
+    }
+
+    public double Offset
+    {
+        get => _offset;
+        set => Set(ref _offset, value);
+    }
+
+    public int ScalePrecision
+    {
+        get => _scalePrecision;
+        set => Set(ref _scalePrecision, Math.Clamp(value, 0, 9));
+    }
+
+    /// <summary>When true, Display() applies Scale/Offset to integer raw values.</summary>
+    public bool ScalingEnabled
+    {
+        get => _scalingEnabled;
+        set => Set(ref _scalingEnabled, value);
+    }
+
+    /// <summary>Optional value→label mapping (e.g. 0→"Idle", 1→"Running"). When set and a key matches, takes precedence over numeric formatting.</summary>
+    public Dictionary<long, string>? ValueNames
+    {
+        get => _valueNames;
+        set => Set(ref _valueNames, value);
+    }
+
+    /// <summary>
+    /// Returns the cell display string. If a value name is mapped to the current raw value, returns the name.
+    /// Otherwise applies scaling (when enabled and the type is integer).
+    /// </summary>
+    public string ApplyDisplayTransform(string formattedRaw)
+    {
+        if (_valueNames is { Count: > 0 } && long.TryParse(formattedRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var asLong)
+            && _valueNames.TryGetValue(asLong, out var name))
+            return name;
+
+        if (_scalingEnabled && IsIntegerType(_dataType)
+            && long.TryParse(formattedRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var raw))
+        {
+            var scaled = raw * _scale + _offset;
+            return scaled.ToString("F" + _scalePrecision, CultureInfo.InvariantCulture);
+        }
+
+        return formattedRaw;
+    }
+
+    private static bool IsIntegerType(CellDataType t) => t is
+        CellDataType.Signed or CellDataType.Unsigned
+        or CellDataType.Signed32 or CellDataType.Unsigned32
+        or CellDataType.Signed64 or CellDataType.Unsigned64;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

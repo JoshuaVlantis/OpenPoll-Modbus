@@ -32,6 +32,51 @@ public partial class HomeView : Window
         BindDocument(doc);
         ApplyFunctionUiState(_document.Definition.Function);
         UpdateDataSubtitle(_document.Definition);
+        RefreshRecentMenu();
+    }
+
+    private void RefreshRecentMenu()
+    {
+        if (RecentMenu is null) return;
+        RecentMenu.Items.Clear();
+        var recent = RecentFilesService.Load();
+        if (recent.Count == 0)
+        {
+            RecentMenu.Items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
+            return;
+        }
+        foreach (var path in recent)
+        {
+            var item = new MenuItem
+            {
+                Header = System.IO.Path.GetFileName(path),
+                Tag = path,
+            };
+            ToolTip.SetTip(item, path);
+            item.Click += async (_, _) =>
+            {
+                try
+                {
+                    var loaded = await WorkspaceFileService.LoadFromPathAsync(path);
+                    if (loaded is null) return;
+                    foreach (var d in _workspace.Documents.ToList())
+                    {
+                        try { await d.StopAsync(); } catch { }
+                        _workspace.Close(d);
+                    }
+                    foreach (var def in loaded) _workspace.AddNew(def);
+                    if (_workspace.Documents.Count > 0)
+                        _workspace.Active = _workspace.Documents[0];
+                    RefreshRecentMenu();
+                }
+                catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+            };
+            RecentMenu.Items.Add(item);
+        }
+        RecentMenu.Items.Add(new Separator());
+        var clear = new MenuItem { Header = "Clear list" };
+        clear.Click += (_, _) => { RecentFilesService.Clear(); RefreshRecentMenu(); };
+        RecentMenu.Items.Add(clear);
     }
 
     private void OnWorkspacePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -419,6 +464,12 @@ public partial class HomeView : Window
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
+    private void OnRevealLogFolder(object? sender, RoutedEventArgs e)
+    {
+        FileLogger.RevealLogFolder();
+        ApplyStatusVisuals(StatusKind.Ok, $"Logs: {FileLogger.LogDirectory}");
+    }
+
     private async void OnToggleHttpApi(object? sender, RoutedEventArgs e)
     {
         try
@@ -442,7 +493,7 @@ public partial class HomeView : Window
 
     private async void OnSaveWorkspace(object? sender, RoutedEventArgs e)
     {
-        try { await WorkspaceFileService.SaveAsync(this, _workspace); }
+        try { await WorkspaceFileService.SaveAsync(this, _workspace); RefreshRecentMenu(); }
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
@@ -463,6 +514,7 @@ public partial class HomeView : Window
                 _workspace.AddNew(def);
             if (_workspace.Documents.Count > 0)
                 _workspace.Active = _workspace.Documents[0];
+            RefreshRecentMenu();
         }
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }

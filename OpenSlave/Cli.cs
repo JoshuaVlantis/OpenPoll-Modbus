@@ -1,28 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
+using System.IO;
 using System.Threading;
-using EasyModbus;
+using OpenSlave.Models;
+using OpenSlave.Services;
 
 namespace OpenSlave;
 
 /// <summary>
-/// CLI for OpenSlave. Headless slave simulator suitable for CI / scripted tests.
-///
-/// Subcommands: run | help
+/// Headless slave CLI — used by CI containers, scripts and the docker functional test.
+/// All flags from the GUI are addressable here so a workspace JSON or a one-liner can
+/// reproduce the same behaviour.
 /// </summary>
 public static class Cli
 {
     public static bool IsKnownCommand(string? a) =>
         a is "run" or "help" or "--help" or "-h";
 
-    private static System.IO.TextWriter _stdout = Console.Out;
+    private static TextWriter _stdout = Console.Out;
 
     public static int Run(string[] args)
     {
         _stdout = Console.Out;
-        Console.SetOut(System.IO.TextWriter.Null);
+        Console.SetOut(TextWriter.Null);
         try
         {
             if (args.Length == 0) { PrintUsage(); return 1; }
@@ -49,19 +50,34 @@ public static class Cli
 USAGE
   openslave run [options]
 
-OPTIONS
-  --port <n>         TCP port to listen on               (default 1502)
-  --slave <n>        unit identifier the slave answers   (default 1)
-  --hr <pairs>       seed holding registers, e.g. --hr 1=100,2=200
-  --coil <pairs>     seed coils, e.g. --coil 1=1,3=1
-  --di <pairs>       seed discrete inputs
-  --ir <pairs>       seed input registers
-  --tick             pretty-print client connect/changes to stdout
-  --quiet            suppress all stdout
+CORE OPTIONS
+  --port <n>             TCP port to listen on               (default 1502)
+  --slave <n>            unit identifier the slave answers   (default 1)
+  --ignore-unit-id       accept any unit ID
+
+DATA SEEDING
+  --hr <pairs>           seed holding registers, e.g. --hr 1=100,2=200
+  --coil <pairs>         seed coils, e.g. --coil 1=1,3=1
+  --di <pairs>           seed discrete inputs
+  --ir <pairs>           seed input registers
+
+ERROR SIMULATION
+  --response-delay <ms>  delay every response by N milliseconds
+  --skip-responses       silently drop 1-in-10 responses
+  --exception-busy       reply to every request with exception 06 (Slave Busy)
+
+WORKSPACE
+  --config <path>        load a .openslave workspace before applying flags
+
+OUTPUT
+  --tick                 pretty-print client connect/changes to stdout
+  --quiet                suppress all stdout
 
 EXAMPLES
-  openslave run --port 1502
-  openslave run --port 1502 --hr 1=100,2=200,3=300 --coil 1=1,3=1
+  openslave run --port 1502 --slave 7
+  openslave run --port 1502 --hr 0=100,1=200,2=300 --coil 0=1,2=1
+  openslave run --port 1502 --response-delay 250 --skip-responses
+  openslave run --config bench.openslave --tick
 ");
         return 0;
     }
@@ -99,37 +115,64 @@ EXAMPLES
         return v is not null && int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : fallback;
     }
 
+    private static bool GetFlag(string[] argv, string name) => GetArg(argv, name) == "true";
+
     private static int RunServer(string[] argv)
     {
-        var port = GetIntArg(argv, "port", 1502);
-        var quiet = GetArg(argv, "quiet") == "true";
-        var tick = GetArg(argv, "tick") == "true";
+        var quiet = GetFlag(argv, "quiet");
+        var tick = GetFlag(argv, "tick");
 
-        var server = new ModbusServer { Port = port };
-        server.Listen();
-        if (!quiet) _stdout.WriteLine($"OpenSlave listening on 0.0.0.0:{port}");
+        SlaveDocument? document = null;
 
-        // Seed values
-        foreach (var kv in ParsePairs(GetArg(argv, "hr"))) server.holdingRegisters[kv.Key] = (short)kv.Value;
-        foreach (var kv in ParsePairs(GetArg(argv, "ir"))) server.inputRegisters[kv.Key] = (short)kv.Value;
-        foreach (var kv in ParsePairs(GetArg(argv, "coil"))) server.coils[kv.Key] = kv.Value != 0;
-        foreach (var kv in ParsePairs(GetArg(argv, "di"))) server.discreteInputs[kv.Key] = kv.Value != 0;
+        var configPath = GetArg(argv, "config");
+        if (configPath is not null)
+        {
+            try { document = WorkspaceFileService.Load(configPath); }
+            catch (Exception ex) { return Fail($"failed to load workspace: {ex.Message}"); }
+        }
+
+        document ??= new SlaveDocument(new SlaveDefinition
+        {
+            Port = 1502,
+            SlaveId = 1,
+            StartAddress = 0,
+            Quantity = 100,
+            AddressBase = AddressBase.Zero,
+        });
+
+        // Flags override anything loaded from the workspace.
+        var def = document.Definition;
+        def.Port = GetIntArg(argv, "port", def.Port);
+        def.SlaveId = GetIntArg(argv, "slave", def.SlaveId);
+        if (GetFlag(argv, "ignore-unit-id")) def.IgnoreUnitId = true;
+        def.ErrorSimulation.ResponseDelayMs = GetIntArg(argv, "response-delay", def.ErrorSimulation.ResponseDelayMs);
+        if (GetFlag(argv, "skip-responses")) def.ErrorSimulation.SkipResponses = true;
+        if (GetFlag(argv, "exception-busy")) def.ErrorSimulation.ReturnExceptionBusy = true;
+
+        foreach (var kv in ParsePairs(GetArg(argv, "hr"))) document.SeedHoldingRegister(kv.Key, (ushort)kv.Value);
+        foreach (var kv in ParsePairs(GetArg(argv, "ir"))) document.SeedInputRegister(kv.Key, (ushort)kv.Value);
+        foreach (var kv in ParsePairs(GetArg(argv, "coil"))) document.SeedCoil(kv.Key, kv.Value != 0);
+        foreach (var kv in ParsePairs(GetArg(argv, "di"))) document.SeedDiscrete(kv.Key, kv.Value != 0);
+
+        document.RebuildCells();
 
         if (tick && !quiet)
         {
-            server.NumberOfConnectedClientsChanged += () =>
-                _stdout.WriteLine($"[{DateTime.Now:HH:mm:ss}] clients = {server.NumberOfConnections}");
-            server.CoilsChanged += (a, q) =>
-                _stdout.WriteLine($"[{DateTime.Now:HH:mm:ss}] write coils @ {a} × {q}");
-            server.HoldingRegistersChanged += (a, q) =>
-                _stdout.WriteLine($"[{DateTime.Now:HH:mm:ss}] write HRs @ {a} × {q}");
+            document.RequestHandled += ev =>
+                _stdout.WriteLine($"[{DateTime.Now:HH:mm:ss}] FC{ev.FunctionCode:X2} @ {ev.Address} × {ev.Quantity} {ev.Detail}".TrimEnd());
+            document.ConnectedClientsChanged += n =>
+                _stdout.WriteLine($"[{DateTime.Now:HH:mm:ss}] clients = {n}");
         }
+
+        document.Start();
+        if (!quiet) _stdout.WriteLine($"OpenSlave listening on 0.0.0.0:{def.Port} (unit id {def.SlaveId})");
 
         using var stop = new ManualResetEventSlim(false);
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Set(); };
         stop.Wait();
 
-        server.StopListening();
+        document.Stop();
+        document.Dispose();
         if (!quiet) _stdout.WriteLine("OpenSlave stopped.");
         return 0;
     }

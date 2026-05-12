@@ -22,11 +22,12 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
 
-    <PackageReference Include="EasyModbusTCP" Version="5.6.0" NoWarn="NU1701" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
+    <AvaloniaResource Include="..\OpenPoll\Themes\Theme.axaml" Link="Themes\Theme.axaml" />
+    <AvaloniaResource Include="..\OpenPoll\Themes\Styles.axaml" Link="Themes\Styles.axaml" />
   </ItemGroup>
 </Project>

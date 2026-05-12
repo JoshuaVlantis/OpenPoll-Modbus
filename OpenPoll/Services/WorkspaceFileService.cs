@@ -54,6 +54,8 @@ public static class WorkspaceFileService
         await using var stream = await file.OpenWriteAsync();
         await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
         await writer.WriteAsync(json);
+
+        RecentFilesService.Add(file.Path.LocalPath);
     }
 
     public static async Task<IReadOnlyList<PollDefinition>?> OpenAsync(Window owner)
@@ -71,13 +73,19 @@ public static class WorkspaceFileService
         });
         if (files.Count == 0) return null;
 
-        await using var stream = await files[0].OpenReadAsync();
-        using var reader = new StreamReader(stream);
-        var json = await reader.ReadToEndAsync();
+        var polls = await LoadFromPathAsync(files[0].Path.LocalPath);
+        return polls;
+    }
 
+    /// <summary>Open by explicit path (used by the MRU menu).</summary>
+    public static async Task<IReadOnlyList<PollDefinition>?> LoadFromPathAsync(string path)
+    {
+        var json = await File.ReadAllTextAsync(path);
         var parsed = JsonSerializer.Deserialize<WorkspaceFile>(json, JsonOptions);
         if (parsed is null) throw new InvalidDataException("Workspace file is empty or invalid JSON.");
         if (parsed.Version > 1) throw new InvalidDataException($"Workspace version {parsed.Version} is newer than this app supports.");
+
+        RecentFilesService.Add(path);
         return parsed.Polls;
     }
 }

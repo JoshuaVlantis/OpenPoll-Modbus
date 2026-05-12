@@ -22,7 +22,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
 
-    <PackageReference Include="EasyModbusTCP" Version="5.6.0" NoWarn="NU1701" />
+    <PackageReference Include="NModbus" Version="3.0.83" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.2" />
   </ItemGroup>

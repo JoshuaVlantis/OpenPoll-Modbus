@@ -49,8 +49,8 @@ read -r -d '' TEST_SCRIPT <<EOSCRIPT || true
 set -u
 ${PRE_CMD}
 
-echo ">>> [${PLATFORM}] starting OpenSlave (port 1502, seeded HRs and coils)"
-${OPENSLAVE_BIN} run --port 1502 --hr 1=111,2=222,3=333 --coil 1=1,2=0,3=1 --quiet &
+echo ">>> [${PLATFORM}] starting OpenSlave (port 1502, seeded HRs and coils, 0-indexed)"
+${OPENSLAVE_BIN} run --port 1502 --hr 0=111,1=222,2=333 --coil 0=1,1=0,2=1 --quiet &
 SLAVE_PID=\$!
 trap "kill -TERM \$SLAVE_PID 2>/dev/null || true" EXIT
 
@@ -95,6 +95,48 @@ run_step "FC06 write HR @4 = 999"      '"ok":true' ${OPENPOLL_BIN} write --ip 12
 run_step "FC03 read back HR @4"        '\[999\]'  ${OPENPOLL_BIN} read  --ip 127.0.0.1 --port 1502 --slave 1 --address 4 --amount 1 --function 03
 run_step "FC05 write coil @5 = on"     '"ok":true' ${OPENPOLL_BIN} write --ip 127.0.0.1 --port 1502 --slave 1 --address 5 --value 1 --function 05
 run_step "FC01 read back coil @5"      '\[true\]' ${OPENPOLL_BIN} read  --ip 127.0.0.1 --port 1502 --slave 1 --address 5 --amount 1 --function 01
+
+# FC15 multi-coil write + readback
+run_step "FC15 write multi coils @20"  '"ok":true' ${OPENPOLL_BIN} write --ip 127.0.0.1 --port 1502 --slave 1 --address 20 --function 15 --value "1,0,1,1,0"
+run_step "FC01 read back coils @20"    '\[true,false,true,true,false\]' ${OPENPOLL_BIN} read --ip 127.0.0.1 --port 1502 --slave 1 --address 20 --amount 5 --function 01
+
+# FC16 multi-register write + readback
+run_step "FC16 write multi regs @30"   '"ok":true' ${OPENPOLL_BIN} write --ip 127.0.0.1 --port 1502 --slave 1 --address 30 --function 16 --value "10,20,30"
+run_step "FC03 read back regs @30"     '\[10,20,30\]' ${OPENPOLL_BIN} read --ip 127.0.0.1 --port 1502 --slave 1 --address 30 --amount 3 --function 03
+
+# FC22 mask write — apply AND 0x00FF, OR 0x1100 to register 0 (current value 111 = 0x6F)
+# Result = (0x006F & 0x00FF) | (0x1100 & ~0x00FF) = 0x6F | 0x1100 = 0x116F = 4463
+run_step "FC22 mask write @0"          '"ok":true' ${OPENPOLL_BIN} mask --ip 127.0.0.1 --port 1502 --slave 1 --address 0 --and-mask 0x00FF --or-mask 0x1100
+run_step "FC03 readback after mask"    '\[4463\]' ${OPENPOLL_BIN} read --ip 127.0.0.1 --port 1502 --slave 1 --address 0 --amount 1 --function 03
+
+# FC23 atomic read+write
+run_step "FC23 read 3 + write [7,8] @50" '"ok":true' ${OPENPOLL_BIN} rw --ip 127.0.0.1 --port 1502 --slave 1 --read-address 1 --read-amount 3 --address 50 --value "7,8"
+run_step "FC03 readback after rw"      '\[7,8\]' ${OPENPOLL_BIN} read --ip 127.0.0.1 --port 1502 --slave 1 --address 50 --amount 2 --function 03
+
+# Slave-side error simulation: stand up a second slave with --exception-busy and
+# verify the master surfaces it. NModbus maps exception code 06 (Slave Busy) onto a
+# SlaveException, which OpenPoll converts to "Modbus exception 06 (Slave device busy)".
+echo ">>> starting second OpenSlave with --exception-busy on port 1503"
+${OPENSLAVE_BIN} run --port 1503 --exception-busy --quiet &
+SLAVE2_PID=\$!
+trap "kill -TERM \$SLAVE_PID 2>/dev/null || true; kill -TERM \$SLAVE2_PID 2>/dev/null || true" EXIT
+for i in \$(seq 1 30); do
+  if (echo > /dev/tcp/127.0.0.1/1503) 2>/dev/null; then break; fi
+  sleep 1
+done
+sleep 1
+echo ">>> [exception-busy] FC03 should now fail with exception 06"
+out=\$(${OPENPOLL_BIN} read --ip 127.0.0.1 --port 1503 --slave 1 --address 0 --amount 1 --function 03 2>&1)
+echo "    out: \$out"
+if echo "\$out" | grep -q '"ok":true'; then
+  echo "FAIL: [exception-busy] expected failure but got success"
+  exit 1
+fi
+if ! echo "\$out" | grep -q '06'; then
+  echo "FAIL: [exception-busy] expected exception code 06 in error message"
+  exit 1
+fi
+echo "    PASS"
 
 echo ">>> [${PLATFORM}] all assertions PASS"
 EOSCRIPT

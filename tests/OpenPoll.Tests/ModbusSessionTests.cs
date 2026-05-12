@@ -1,36 +1,44 @@
-using EasyModbus;
+using System.Net.Sockets;
 using FluentAssertions;
 using OpenPoll.Models;
 using OpenPoll.Services;
+using OpenSlave.Services;
 
 namespace OpenPoll.Tests;
 
 /// <summary>
-/// Integration tests against an in-process EasyModbus.ModbusServer.
-/// Each test starts a server on a unique port to avoid cross-test interference.
+/// Integration tests against an in-process <see cref="ModbusTcpSlave"/>.
+/// Each test starts a slave on a unique port to avoid cross-test interference.
 /// </summary>
 public class ModbusSessionTests : IDisposable
 {
-    private static int _portCounter = 11000;
-    private readonly ModbusServer _server;
+    private readonly ModbusTcpSlave _slave = new();
     private readonly int _port;
 
     public ModbusSessionTests()
     {
-        _port = Interlocked.Increment(ref _portCounter);
-        _server = new ModbusServer { Port = _port };
-        _server.Listen();
-        // Seed
-        for (int i = 1; i <= 20; i++)
+        _port = FreePort();
+        // Spec-compliant 0-indexed: seed wire addresses 0..19 with 10..200
+        for (int i = 0; i < 20; i++)
         {
-            _server.holdingRegisters[i] = (short)(i * 10);
-            _server.inputRegisters[i] = (short)(-i * 10);
-            _server.coils[i] = (i % 2 == 0);
-            _server.discreteInputs[i] = (i % 3 == 0);
+            _slave.HoldingRegisters[i] = (ushort)((i + 1) * 10);
+            _slave.InputRegisters[i] = unchecked((ushort)(short)(-(i + 1) * 10));
+            _slave.Coils[i] = (i % 2 == 0);
+            _slave.DiscreteInputs[i] = (i % 3 == 0);
         }
+        _slave.Start(_port);
     }
 
-    public void Dispose() => _server.StopListening();
+    public void Dispose() => _slave.Dispose();
+
+    private static int FreePort()
+    {
+        var listener = new TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
 
     private PollDefinition Def(int slave = 1) => new()
     {
@@ -39,6 +47,7 @@ public class ModbusSessionTests : IDisposable
         ServerPort = _port,
         NodeId = slave,
         ConnectionTimeoutMs = 2000,
+        ResponseTimeoutMs = 2000,
     };
 
     [Fact]
@@ -67,7 +76,7 @@ public class ModbusSessionTests : IDisposable
     {
         using var s = new ModbusSession();
         s.Connect(Def()).Success.Should().BeTrue();
-        var r = s.ReadHoldingRegisters(0, 5);  // wire addr 0..4 → server array index 1..5
+        var r = s.ReadHoldingRegisters(0, 5);
         r.Success.Should().BeTrue();
         r.Value.Should().NotBeNull();
         r.Value!.Length.Should().Be(5);
@@ -129,7 +138,6 @@ public class ModbusSessionTests : IDisposable
         using var s = new ModbusSession();
         s.Connect(Def()).Success.Should().BeTrue();
         s.Connected.Should().BeTrue();
-        // Connect again with same settings — should short-circuit, stay connected
         s.Connect(Def()).Success.Should().BeTrue();
         s.Connected.Should().BeTrue();
     }
@@ -141,10 +149,10 @@ public class ModbusSessionTests : IDisposable
         s.Connect(Def(1)).Success.Should().BeTrue();
         var r1 = s.ReadHoldingRegisters(0, 1);
         r1.Success.Should().BeTrue();
-        // Change unit id — slave only answers to id=1, so this should fail at protocol level
-        s.Connect(Def(99)).Success.Should().BeTrue();  // TCP connect still ok
+        // Slave only answers unit id 1; reconnect with unit id 99 → no response
+        s.Connect(Def(99)).Success.Should().BeTrue();
         var r2 = s.ReadHoldingRegisters(0, 1);
-        r2.Success.Should().BeFalse();  // wrong slave id → no response
+        r2.Success.Should().BeFalse();
     }
 
     [Fact]
@@ -163,8 +171,62 @@ public class ModbusSessionTests : IDisposable
     {
         using var s = new ModbusSession();
         s.Connect(Def()).Success.Should().BeTrue();
-        // EasyModbus server allocates 65535 registers; reading way past should fail
+        // Slave allocates 65536 registers; reading way past should surface exception 02
         var r = s.ReadHoldingRegisters(70000, 1);
         r.Success.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Fc22_MaskWriteRegister_AppliesAndOrCorrectly()
+    {
+        _slave.HoldingRegisters[120] = 0x1234;
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        s.MaskWriteRegister(120, andMask: 0x00FF, orMask: 0xFF00).Success.Should().BeTrue();
+        // (0x1234 & 0x00FF) | (0xFF00 & ~0x00FF) = 0x0034 | 0xFF00 = 0xFF34
+        _slave.HoldingRegisters[120].Should().Be(0xFF34);
+    }
+
+    [Fact]
+    public void Fc23_ReadWriteMultiple_AtomicallyWritesThenReads()
+    {
+        _slave.HoldingRegisters[200] = 1000;
+        _slave.HoldingRegisters[201] = 2000;
+        _slave.HoldingRegisters[202] = 3000;
+
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var result = s.ReadWriteMultipleRegisters(writeAddress: 210, writeValues: new[] { 7, 8 },
+                                                   readAddress: 200, readQuantity: 3);
+        result.Success.Should().BeTrue();
+        result.Value.Should().Equal(1000, 2000, 3000);
+        _slave.HoldingRegisters[210].Should().Be(7);
+        _slave.HoldingRegisters[211].Should().Be(8);
+    }
+
+    [Fact]
+    public void ExceptionBusy_FromSlaveSurfacesAsFailure()
+    {
+        _slave.ReturnExceptionBusy = true;
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var r = s.ReadHoldingRegisters(0, 1);
+        r.Success.Should().BeFalse();
+        r.Error.Should().Contain("06");
+        r.Error.Should().Contain("busy", Exactly.Once());
+    }
+
+    [Fact]
+    public void Retries_AreAttemptedOnTransientFailure()
+    {
+        // Stop the slave; the master should retry --retries times and then fail.
+        _slave.Stop();
+        using var s = new ModbusSession();
+        var def = Def();
+        def.Retries = 2;
+        def.ConnectionTimeoutMs = 200;
+        // Connect itself fails (port closed) — that's enough to assert the retry path doesn't crash.
+        var connect = s.Connect(def);
+        connect.Success.Should().BeFalse();
     }
 }

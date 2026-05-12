@@ -18,6 +18,7 @@
                            VerticalAlignment="Center" />
                 <Button Content="Clear" Click="OnClear" />
                 <Button Content="Pause" Click="OnTogglePause" Name="PauseButton" />
+                <Button Content="Save…" Click="OnSave" />
                 <CheckBox Name="AutoScrollInput" Content="Auto-scroll" IsChecked="True" />
             </StackPanel>
         </Border>

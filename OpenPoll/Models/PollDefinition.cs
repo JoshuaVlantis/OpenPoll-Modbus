@@ -14,7 +14,15 @@ public sealed class PollDefinition
 
     public string IpAddress { get; set; } = "127.0.0.1";
     public int ServerPort { get; set; } = 502;
+
+    /// <summary>Time to wait for the TCP connect / serial-port open to succeed.</summary>
     public int ConnectionTimeoutMs { get; set; } = 1000;
+
+    /// <summary>Per-request response timeout, separate from <see cref="ConnectionTimeoutMs"/>.</summary>
+    public int ResponseTimeoutMs { get; set; } = 1000;
+
+    /// <summary>Number of additional attempts after a transient failure before giving up.</summary>
+    public int Retries { get; set; }
 
     public string SerialPortName { get; set; } = "";
     public int BaudRate { get; set; } = 9600;
@@ -40,6 +48,8 @@ public sealed class PollDefinition
         IpAddress = IpAddress,
         ServerPort = ServerPort,
         ConnectionTimeoutMs = ConnectionTimeoutMs,
+        ResponseTimeoutMs = ResponseTimeoutMs,
+        Retries = Retries,
         SerialPortName = SerialPortName,
         BaudRate = BaudRate,
         Parity = Parity,

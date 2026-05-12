@@ -25,6 +25,7 @@
                         <Separator />
                         <MenuItem Header="Open workspace…" Click="OnLoadWorkspace" InputGesture="Ctrl+O" />
                         <MenuItem Header="Save workspace…" Click="OnSaveWorkspace" InputGesture="Ctrl+S" />
+                        <MenuItem x:Name="RecentMenu" Header="Recent workspaces" />
                         <Separator />
                         <MenuItem Header="Setup…" Click="OnOpenSetup" />
                         <MenuItem Header="Connection Setup…" Click="OnOpenConnectionSetup" />
@@ -35,6 +36,8 @@
                         <MenuItem Header="Modbus Scraper…" Click="OnOpenScraper" />
                         <MenuItem Header="Live Chart…" Click="OnOpenChart" />
                         <MenuItem Header="Traffic Monitor…" Click="OnOpenTrafficMonitor" />
+                        <Separator />
+                        <MenuItem Header="Reveal log folder…" Click="OnRevealLogFolder" />
                         <Separator />
                         <MenuItem x:Name="HttpApiMenu" Header="Start HTTP API (:8080)" Click="OnToggleHttpApi" />
                     </MenuItem>

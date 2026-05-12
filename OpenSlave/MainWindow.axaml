@@ -3,102 +3,436 @@
         x:Class="OpenSlave.MainWindow"
         Title="OpenSlave — Modbus slave simulator"
         Icon="/Assets/icon.png"
-        Width="900" Height="640"
-        MinWidth="640" MinHeight="420"
-        WindowStartupLocation="CenterScreen">
+        Width="1100" Height="760"
+        MinWidth="780" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource SurfaceBaseBrush}">
+
+    <Window.Styles>
+        <Style Selector="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="TabControl /template/ ItemsPresenter#PART_ItemsPresenter">
+            <Setter Property="Margin" Value="16,0,16,0" />
+        </Style>
+
+        <Style Selector="TabItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Setter Property="FontFamily" Value="{DynamicResource SansFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="TabItem /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0,0,0,2" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="TabItem:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
+
+        <Style Selector="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="ListBoxItem">
+            <Setter Property="FontFamily" Value="{DynamicResource MonoFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Padding" Value="14,4" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="ListBoxItem:nth-child(even) /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DataGridAltRowBrush}" />
+        </Style>
+
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="LetterSpacing" Value="2" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Styles>
 
     <DockPanel LastChildFill="True">
 
+        <!-- ════════ Menu bar ════════ -->
+        <Menu DockPanel.Dock="Top" Background="{DynamicResource Surface1Brush}">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open Workspace…" Click="OnOpenWorkspace" InputGesture="Ctrl+O" />
+                <MenuItem Header="_Save Workspace…" Click="OnSaveWorkspace" InputGesture="Ctrl+S" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="OnExit" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Switch to _Slave Definition" Click="OnFocusDefinition" />
+                <MenuItem Header="Switch to _Tables" Click="OnFocusTables" />
+                <MenuItem Header="Switch to _Request Log" Click="OnFocusLog" />
+                <Separator />
+                <MenuItem Header="Reveal _log folder…" Click="OnRevealLogFolder" />
+            </MenuItem>
+        </Menu>
+
         <!-- ════════ Brand bar ════════ -->
-        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" Padding="16,10">
-            <Grid ColumnDefinitions="Auto,*">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <Border Width="28" Height="28" CornerRadius="6" BorderThickness="1">
-                        <Image Source="/Assets/icon.png" Width="18" Height="18" />
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource HeroGradientBrush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.Column="0" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                    <Border Width="28" Height="28" CornerRadius="6"
+                            Background="{DynamicResource AccentSurfaceBrush}"
+                            BorderBrush="{DynamicResource AccentBorderBrush}"
+                            BorderThickness="1">
+                        <Image Source="/Assets/icon.png" Width="18" Height="18"
+                               VerticalAlignment="Center" HorizontalAlignment="Center" />
                     </Border>
-                    <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                        <TextBlock Text="OPENSLAVE" FontWeight="Bold" FontSize="13" LetterSpacing="3" />
-                        <TextBlock Text="Open-source Modbus slave simulator · v1" FontSize="10" Opacity="0.6" />
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Spacing="0">
+                        <TextBlock Text="OPENSLAVE" FontWeight="Bold" FontSize="13"
+                                   LetterSpacing="3" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="Open-source Modbus slave simulator · v1" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}" Margin="0,1,0,0" />
                     </StackPanel>
                 </StackPanel>
+
+                <Border Grid.Column="2" />
             </Grid>
         </Border>
 
-        <!-- ════════ Listen settings + start/stop ════════ -->
-        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" Padding="16,12">
-            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <TextBlock Text="Port:" VerticalAlignment="Center" />
-                <NumericUpDown Name="PortInput" Minimum="1" Maximum="65535" Increment="1"
-                               FormatString="0" Value="1502" Width="100" />
-                <TextBlock Text="Unit ID:" VerticalAlignment="Center" Margin="12,0,0,0" />
-                <NumericUpDown Name="UnitIdInput" Minimum="1" Maximum="247" Increment="1"
-                               FormatString="0" Value="1" Width="80" />
-                <Button Name="StartButton" Content="● Start" Click="OnStart" Margin="16,0,0,0" />
-                <Button Name="StopButton" Content="Stop" Click="OnStop" IsEnabled="False" />
-                <Border Name="StatusPill" CornerRadius="14" Padding="12,5" BorderThickness="1" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Ellipse Name="StatusDot" Width="8" Height="8" Fill="#888" VerticalAlignment="Center" />
-                        <TextBlock Name="StatusText" Text="Stopped" VerticalAlignment="Center" FontSize="12" />
+        <!-- ════════ Action bar: start/stop + status ════════ -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Surface1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,12">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                <Button Grid.Column="0" Name="StartButton" Content="● Start"
+                        Classes="primary" Click="OnStart"
+                        Width="116" Margin="0,0,8,0" />
+                <Button Grid.Column="1" Name="StopButton" Content="Stop"
+                        Click="OnStop" Width="92" IsEnabled="False" />
+
+                <Border Grid.Column="3"
+                        Name="StatusPill"
+                        Background="{DynamicResource StatusIdleSurfaceBrush}"
+                        BorderBrush="{DynamicResource StatusIdleBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="14"
+                        Padding="12,5"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Ellipse Name="StatusDot" Width="8" Height="8"
+                                 Fill="{DynamicResource StatusIdleBrush}" VerticalAlignment="Center" />
+                        <TextBlock Name="StatusText" Text="Stopped"
+                                   FontSize="12" FontWeight="Medium"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>
-            </StackPanel>
+            </Grid>
         </Border>
 
-        <!-- ════════ Tab strip: register tables + request log ════════ -->
-        <TabControl DockPanel.Dock="Top" Name="MainTabs">
-            <TabItem Header="Coils (0x)">
-                <DataGrid Name="CoilsGrid" AutoGenerateColumns="False" SelectionMode="Single"
-                          IsReadOnly="False" RowEditEnded="OnCoilEdit">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Address" Binding="{ReflectionBinding Address}" IsReadOnly="True" Width="100" />
-                        <DataGridTextColumn Header="Value" Binding="{ReflectionBinding Display}" Width="*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="Discrete inputs (1x)">
-                <DataGrid Name="DiscreteGrid" AutoGenerateColumns="False" SelectionMode="Single"
-                          IsReadOnly="False" RowEditEnded="OnDiscreteEdit">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Address" Binding="{ReflectionBinding Address}" IsReadOnly="True" Width="100" />
-                        <DataGridTextColumn Header="Value" Binding="{ReflectionBinding Display}" Width="*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="Holding registers (4x)">
-                <DataGrid Name="HoldingGrid" AutoGenerateColumns="False" SelectionMode="Single"
-                          IsReadOnly="False" RowEditEnded="OnHoldingEdit">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Address" Binding="{ReflectionBinding Address}" IsReadOnly="True" Width="100" />
-                        <DataGridTextColumn Header="Value" Binding="{ReflectionBinding Display}" Width="*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="Input registers (3x)">
-                <DataGrid Name="InputGrid" AutoGenerateColumns="False" SelectionMode="Single"
-                          IsReadOnly="False" RowEditEnded="OnInputEdit">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Address" Binding="{ReflectionBinding Address}" IsReadOnly="True" Width="100" />
-                        <DataGridTextColumn Header="Value" Binding="{ReflectionBinding Display}" Width="*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="Request log">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Padding="8">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Content="Clear" Click="OnClearLog" />
-                            <CheckBox Name="AutoScrollInput" Content="Auto-scroll" IsChecked="True" />
+        <!-- ════════ Footer: stats ════════ -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource Surface1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="16,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Text="Edit cells to push values to clients · Right-click registers for type · File → Save Workspace to persist" />
+
+                <Border Grid.Column="1"
+                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="10,3"
+                        Background="{DynamicResource Surface2Brush}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="SLAVE" FontSize="9" FontWeight="Bold"
+                                   LetterSpacing="2"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Name="StatsText" Text="—"
+                                   FontFamily="{DynamicResource MonoFont}"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Main split: definition card | tables card ════════ -->
+        <Grid Margin="16" ColumnDefinitions="320,16,*">
+
+            <!-- ════ Slave definition card ════ -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource Surface1Brush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <DockPanel LastChildFill="True">
+                    <Border DockPanel.Dock="Top"
+                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,10">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <Rectangle Width="2" Height="14" Fill="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="SLAVE DEFINITION" FontSize="11" FontWeight="Bold"
+                                       LetterSpacing="2.5"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
-                    <ListBox Name="LogList" />
-                </DockPanel>
-            </TabItem>
-        </TabControl>
 
-        <!-- footer: counts -->
-        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" Padding="16,8">
-            <TextBlock Name="StatsText" Text="—" FontSize="11" Opacity="0.7" />
-        </Border>
+                    <ScrollViewer>
+                        <StackPanel Margin="16,14" Spacing="12">
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="label" Text="LISTEN PORT" />
+                                <NumericUpDown Name="PortInput" Minimum="1" Maximum="65535"
+                                               Increment="1" FormatString="0" Value="1502" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="label" Text="UNIT / SLAVE ID" />
+                                <NumericUpDown Name="SlaveIdInput" Minimum="0" Maximum="247"
+                                               Increment="1" FormatString="0" Value="1" />
+                                <CheckBox Name="IgnoreUnitIdInput" Content="Ignore unit ID (accept all)" />
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,8,*">
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Classes="label" Text="START ADDRESS" />
+                                    <NumericUpDown Name="StartAddressInput" Minimum="0" Maximum="65535"
+                                                   Increment="1" FormatString="0" Value="0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Classes="label" Text="QUANTITY" />
+                                    <NumericUpDown Name="QuantityInput" Minimum="1" Maximum="10000"
+                                                   Increment="1" FormatString="0" Value="100" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="label" Text="ADDRESS BASE" />
+                                <ComboBox Name="AddressBaseInput" SelectedIndex="1" HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="Base 0 (protocol)" />
+                                    <ComboBoxItem Content="Base 1 (PLC / 4xxxx style)" />
+                                </ComboBox>
+                            </StackPanel>
+
+                            <Border Margin="0,8,0,0"
+                                    BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                    BorderThickness="0,1,0,0" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Rectangle Width="2" Height="12" Fill="{DynamicResource AccentBrush}" />
+                                <TextBlock Classes="label" Text="ERROR SIMULATION" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="label" Text="RESPONSE DELAY (ms)" />
+                                <NumericUpDown Name="ResponseDelayInput" Minimum="0" Maximum="10000"
+                                               Increment="50" FormatString="0" Value="0" />
+                            </StackPanel>
+
+                            <CheckBox Name="SkipResponsesInput"
+                                      Content="Skip 1-in-10 responses" />
+                            <CheckBox Name="ExceptionBusyInput"
+                                      Content="Return Exception 06 (Slave Busy)" />
+
+                            <Button Content="Apply changes" HorizontalAlignment="Stretch"
+                                    Click="OnApplyDefinition" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- ════ Register tables card ════ -->
+            <Border Grid.Column="2"
+                    Background="{DynamicResource Surface1Brush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <DockPanel LastChildFill="True">
+                    <Border DockPanel.Dock="Top"
+                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,10">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <Rectangle Width="2" Height="14" Fill="{DynamicResource AccentBrush}" />
+                            <TextBlock Text="REGISTER TABLES" FontSize="11" FontWeight="Bold"
+                                       LetterSpacing="2.5"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <TabControl Name="MainTabs">
+                        <TabItem Header="COILS (0x)">
+                            <DataGrid Name="CoilsGrid" AutoGenerateColumns="False" SelectionMode="Single"
+                                      IsReadOnly="False" RowEditEnded="OnCoilEdit"
+                                      CanUserSortColumns="False" CanUserReorderColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ADDR" Binding="{ReflectionBinding DisplayAddress}"
+                                                        IsReadOnly="True" Width="120"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <DataGridTextColumn Header="VALUE" Binding="{ReflectionBinding Display}"
+                                                        Width="*"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        FontWeight="Medium" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                        <TabItem Header="DISCRETE INPUTS (1x)">
+                            <DataGrid Name="DiscreteGrid" AutoGenerateColumns="False" SelectionMode="Single"
+                                      IsReadOnly="False" RowEditEnded="OnDiscreteEdit"
+                                      CanUserSortColumns="False" CanUserReorderColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ADDR" Binding="{ReflectionBinding DisplayAddress}"
+                                                        IsReadOnly="True" Width="120"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <DataGridTextColumn Header="VALUE" Binding="{ReflectionBinding Display}"
+                                                        Width="*"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        FontWeight="Medium" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                        <TabItem Header="HOLDING REGISTERS (4x)">
+                            <DataGrid Name="HoldingGrid" AutoGenerateColumns="False" SelectionMode="Single"
+                                      IsReadOnly="False" RowEditEnded="OnHoldingEdit"
+                                      BeginningEdit="OnRowBeginningEdit"
+                                      CanUserSortColumns="False" CanUserReorderColumns="False">
+                                <DataGrid.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Type: Signed (16)" Click="OnSetType_Holding_Signed" />
+                                        <MenuItem Header="Type: Unsigned (16)" Click="OnSetType_Holding_Unsigned" />
+                                        <MenuItem Header="Type: Hex (16)" Click="OnSetType_Holding_Hex" />
+                                        <MenuItem Header="Type: Binary (16)" Click="OnSetType_Holding_Binary" />
+                                        <Separator />
+                                        <MenuItem Header="Type: Signed (32)" Click="OnSetType_Holding_Signed32" />
+                                        <MenuItem Header="Type: Unsigned (32)" Click="OnSetType_Holding_Unsigned32" />
+                                        <MenuItem Header="Type: Hex (32)" Click="OnSetType_Holding_Hex32" />
+                                        <MenuItem Header="Type: Float (32)" Click="OnSetType_Holding_Float" />
+                                        <Separator />
+                                        <MenuItem Header="Type: Signed (64)" Click="OnSetType_Holding_Signed64" />
+                                        <MenuItem Header="Type: Unsigned (64)" Click="OnSetType_Holding_Unsigned64" />
+                                        <MenuItem Header="Type: Hex (64)" Click="OnSetType_Holding_Hex64" />
+                                        <MenuItem Header="Type: Double (64)" Click="OnSetType_Holding_Double" />
+                                        <Separator />
+                                        <MenuItem Header="Word order: Big-endian (ABCD)" Click="OnSetOrder_Holding_BE" />
+                                        <MenuItem Header="Word order: Little-endian (DCBA)" Click="OnSetOrder_Holding_LE" />
+                                        <MenuItem Header="Word order: Big-endian byte-swap (BADC)" Click="OnSetOrder_Holding_BEBS" />
+                                        <MenuItem Header="Word order: Little-endian byte-swap (CDAB)" Click="OnSetOrder_Holding_LEBS" />
+                                    </ContextMenu>
+                                </DataGrid.ContextMenu>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ADDR" Binding="{ReflectionBinding DisplayAddress}"
+                                                        IsReadOnly="True" Width="100"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <DataGridTextColumn Header="TYPE" Binding="{ReflectionBinding DataTypeLabel}"
+                                                        IsReadOnly="True" Width="120"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        Foreground="{DynamicResource TextMutedBrush}" />
+                                    <DataGridTextColumn Header="VALUE" Binding="{ReflectionBinding Display}"
+                                                        Width="*"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        FontWeight="Medium" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                        <TabItem Header="INPUT REGISTERS (3x)">
+                            <DataGrid Name="InputGrid" AutoGenerateColumns="False" SelectionMode="Single"
+                                      IsReadOnly="False" RowEditEnded="OnInputEdit"
+                                      BeginningEdit="OnRowBeginningEdit"
+                                      CanUserSortColumns="False" CanUserReorderColumns="False">
+                                <DataGrid.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Type: Signed (16)" Click="OnSetType_Input_Signed" />
+                                        <MenuItem Header="Type: Unsigned (16)" Click="OnSetType_Input_Unsigned" />
+                                        <MenuItem Header="Type: Hex (16)" Click="OnSetType_Input_Hex" />
+                                        <MenuItem Header="Type: Binary (16)" Click="OnSetType_Input_Binary" />
+                                        <Separator />
+                                        <MenuItem Header="Type: Signed (32)" Click="OnSetType_Input_Signed32" />
+                                        <MenuItem Header="Type: Unsigned (32)" Click="OnSetType_Input_Unsigned32" />
+                                        <MenuItem Header="Type: Hex (32)" Click="OnSetType_Input_Hex32" />
+                                        <MenuItem Header="Type: Float (32)" Click="OnSetType_Input_Float" />
+                                        <Separator />
+                                        <MenuItem Header="Type: Signed (64)" Click="OnSetType_Input_Signed64" />
+                                        <MenuItem Header="Type: Unsigned (64)" Click="OnSetType_Input_Unsigned64" />
+                                        <MenuItem Header="Type: Hex (64)" Click="OnSetType_Input_Hex64" />
+                                        <MenuItem Header="Type: Double (64)" Click="OnSetType_Input_Double" />
+                                        <Separator />
+                                        <MenuItem Header="Word order: Big-endian (ABCD)" Click="OnSetOrder_Input_BE" />
+                                        <MenuItem Header="Word order: Little-endian (DCBA)" Click="OnSetOrder_Input_LE" />
+                                        <MenuItem Header="Word order: Big-endian byte-swap (BADC)" Click="OnSetOrder_Input_BEBS" />
+                                        <MenuItem Header="Word order: Little-endian byte-swap (CDAB)" Click="OnSetOrder_Input_LEBS" />
+                                    </ContextMenu>
+                                </DataGrid.ContextMenu>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ADDR" Binding="{ReflectionBinding DisplayAddress}"
+                                                        IsReadOnly="True" Width="100"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <DataGridTextColumn Header="TYPE" Binding="{ReflectionBinding DataTypeLabel}"
+                                                        IsReadOnly="True" Width="120"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        Foreground="{DynamicResource TextMutedBrush}" />
+                                    <DataGridTextColumn Header="VALUE" Binding="{ReflectionBinding Display}"
+                                                        Width="*"
+                                                        FontFamily="{DynamicResource MonoFont}"
+                                                        FontWeight="Medium" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                        <TabItem Header="REQUEST LOG">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Top"
+                                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="14,8">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <Button Content="Clear" Click="OnClearLog" />
+                                        <Button Content="Save…" Click="OnSaveLog" />
+                                        <CheckBox Name="AutoScrollInput" Content="Auto-scroll" IsChecked="True"
+                                                  VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                                <ListBox Name="LogList" />
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+            </Border>
+        </Grid>
 
     </DockPanel>
 </Window>

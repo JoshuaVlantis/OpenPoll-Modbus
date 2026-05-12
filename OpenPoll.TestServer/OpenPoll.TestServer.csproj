@@ -10,8 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EasyModbusTCP" Version="5.6.0" NoWarn="NU1701" />
-    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <ProjectReference Include="../OpenSlave/OpenSlave.csproj" />
   </ItemGroup>
 
 </Project>

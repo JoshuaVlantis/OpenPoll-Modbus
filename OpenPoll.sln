@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{75349133
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPoll.Tests", "tests\OpenPoll.Tests\OpenPoll.Tests.csproj", "{E13F4D97-2C26-4134-BBF7-2349B4F511BC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSlave.Tests", "tests\OpenSlave.Tests\OpenSlave.Tests.csproj", "{3C6D4C82-7091-457C-AAE0-206E48070D3F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,8 +40,13 @@ Global
 		{E13F4D97-2C26-4134-BBF7-2349B4F511BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E13F4D97-2C26-4134-BBF7-2349B4F511BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E13F4D97-2C26-4134-BBF7-2349B4F511BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C6D4C82-7091-457C-AAE0-206E48070D3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C6D4C82-7091-457C-AAE0-206E48070D3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C6D4C82-7091-457C-AAE0-206E48070D3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C6D4C82-7091-457C-AAE0-206E48070D3F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E13F4D97-2C26-4134-BBF7-2349B4F511BC} = {75349133-13E1-4610-8B00-F049E96682C2}
+		{3C6D4C82-7091-457C-AAE0-206E48070D3F} = {75349133-13E1-4610-8B00-F049E96682C2}
 	EndGlobalSection
 EndGlobal

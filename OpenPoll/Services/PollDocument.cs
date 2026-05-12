@@ -18,6 +18,9 @@ public enum PollStatus { Idle, Connecting, Connected, Error }
 public sealed class PollDocument : INotifyPropertyChanged, IDisposable
 {
     private readonly ModbusSession _session = new();
+
+    /// <summary>Exposed so the HTTP API and other host-side callers can issue writes against this poll's transport.</summary>
+    public ModbusSession Session => _session;
     private readonly object _stateLock = new();
     private CancellationTokenSource? _cts;
     private Task? _task;
@@ -224,7 +227,7 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
             row.Address = wire;
             row.DisplayAddress = wire + (def.DisplayOneIndexed ? 1 : 0);
             row.RawBool = values[i];
-            row.Value = ValueFormatter.FormatCoil(values[i]);
+            row.Value = row.ApplyDisplayTransform(ValueFormatter.FormatCoil(values[i]));
         }
         PollCount++;
         SetStatus(PollStatus.Connected, "Connected");
@@ -252,7 +255,7 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
             for (int w = 0; w < available; w++) packed[w] = values[i + w];
 
             row.RawWords = packed;
-            row.Value = ValueFormatter.FormatRegister(packed, row.DataType, order);
+            row.Value = row.ApplyDisplayTransform(ValueFormatter.FormatRegister(packed, row.DataType, order));
         }
         PollCount++;
         SetStatus(PollStatus.Connected, "Connected");

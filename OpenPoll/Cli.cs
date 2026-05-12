@@ -29,17 +29,13 @@ public static class Cli
     };
 
     public static bool IsKnownCommand(string? arg) =>
-        arg is "read" or "write" or "scan" or "serve" or "help" or "--help" or "-h";
+        arg is "read" or "write" or "rw" or "mask" or "scan" or "serve" or "help" or "--help" or "-h";
 
-    /// <summary>EasyModbus prints a copyright banner to Console.Out on every ModbusClient
-    /// construction. We redirect Console.Out for the entire CLI session and write our own
-    /// JSON output via the saved original.</summary>
     private static TextWriter _stdout = Console.Out;
 
     public static int Run(string[] args)
     {
         _stdout = Console.Out;
-        Console.SetOut(TextWriter.Null);
         if (args.Length == 0) { PrintUsage(); return 1; }
         try
         {
@@ -47,6 +43,8 @@ public static class Cli
             {
                 "read"   => RunRead(args[1..]).GetAwaiter().GetResult(),
                 "write"  => RunWrite(args[1..]).GetAwaiter().GetResult(),
+                "rw"     => RunReadWrite(args[1..]).GetAwaiter().GetResult(),
+                "mask"   => RunMask(args[1..]).GetAwaiter().GetResult(),
                 "scan"   => RunScan(args[1..]).GetAwaiter().GetResult(),
                 "serve"  => RunServe(args[1..]).GetAwaiter().GetResult(),
                 "help" or "--help" or "-h" => PrintUsage(),
@@ -102,22 +100,47 @@ USAGE
 
 COMMANDS
   read    one-shot read of N registers/coils, JSON to stdout
-  write   one-shot write of a single coil or register
+  write   one-shot write of a single coil or register (FC 05/06/15/16)
+  rw      atomic FC 23 Read/Write Multiple Registers
+  mask    FC 22 Mask Write Register: result = (cur AND and) OR (or AND NOT and)
   scan    sweep registers, slave IDs, or IP range; one JSON line per result
   serve   start the HTTP API (and nothing else) until SIGINT
   help    this message
 
-COMMON OPTIONS
-  --ip <addr>       slave IP address       (default 127.0.0.1)
-  --port <n>        TCP port               (default 502)
-  --slave <n>       Modbus unit identifier (default 1)
-  --timeout <ms>    connect timeout         (default 2000)
+TRANSPORT (any subcommand that talks Modbus)
+  TCP (default):
+    --ip <addr>           slave IP address              (default 127.0.0.1)
+    --port <n>            TCP port                       (default 502)
+
+  Serial RTU (RS-232/RS-485, USB serial converters):
+    --serial <port>       e.g. /dev/ttyUSB0 or COM3
+    --baud <n>            300|600|1200|2400|4800|9600|14400|19200|38400|
+                          57600|115200|...               (default 9600)
+    --parity <p>          none|even|odd|mark|space       (default none)
+    --stopbits <p>        one|two|onepointfive           (default one)
+
+  Common:
+    --slave <n>           Modbus unit identifier         (default 1)
+    --timeout <ms>        connect timeout                (default 2000)
+    --response-timeout <ms>  per-request response timeout (default = --timeout)
+    --retries <n>         retry attempts after a failure (default 0)
 
   read | write SPECIFIC
-    --function <code>  03|04|01|02 for read; 05|06 for write    (default 03 read, 06 write)
+    --function <code>  read: 01|02|03|04 · write: 05|06|15|16  (default 03 / 06)
     --address <n>      starting address (wire-level / 0-indexed) (default 0)
     --amount <n>       quantity to read                          (default 10)
-    --value <v>        value to write (1/0 for coil, integer for register)
+    --value <v>        write value: ""1""/""0"" for coil, integer for reg, ""1,2,3"" for multi
+
+  rw SPECIFIC (FC 23)
+    --read-address <n>     start address to read
+    --read-amount <n>      quantity to read
+    --address <n>          start address to write
+    --value <list>         comma-separated registers to write
+
+  mask SPECIFIC (FC 22)
+    --address <n>          register address
+    --and-mask <hex|int>   AND mask (e.g. 0x00FF or 255)
+    --or-mask  <hex|int>   OR  mask
 
   scan SPECIFIC
     --type <kind>      ip | id | registers
@@ -133,22 +156,37 @@ COMMON OPTIONS
 EXAMPLES
   openpoll read --ip 127.0.0.1 --port 1502 --address 1 --amount 5 --function 03
   openpoll write --ip 127.0.0.1 --port 1502 --address 1 --value 42 --function 06
+  openpoll write --serial /dev/ttyUSB0 --baud 19200 --parity even --address 0 --value 99
+  openpoll mask --ip 127.0.0.1 --port 1502 --address 0 --and-mask 0x00FF --or-mask 0x1100
+  openpoll rw   --ip 127.0.0.1 --port 1502 --read-address 0 --read-amount 4 --address 10 --value 7,8,9
   openpoll scan --type ip --base 192.168.1.0 --port 502 --timeout 500
 ");
         return 0;
     }
 
-    private static PollDefinition DefFromArgs(Args a, ModbusFunction defaultFunction = ModbusFunction.HoldingRegisters) => new()
+    private static PollDefinition DefFromArgs(Args a, ModbusFunction defaultFunction = ModbusFunction.HoldingRegisters)
     {
-        ConnectionMode = ConnectionMode.Tcp,
-        IpAddress = a.Get("ip", "127.0.0.1"),
-        ServerPort = a.GetInt("port", 502),
-        NodeId = a.GetInt("slave", 1),
-        ConnectionTimeoutMs = a.GetInt("timeout", 2000),
-        Address = a.GetInt("address", 0),
-        Amount = a.GetInt("amount", 10),
-        Function = ParseFunction(a.Get("function"), defaultFunction),
-    };
+        var serialPort = a.Get("serial");
+        var connectTimeout = a.GetInt("timeout", 2000);
+        var def = new PollDefinition
+        {
+            ConnectionMode = serialPort is not null ? ConnectionMode.Serial : ConnectionMode.Tcp,
+            IpAddress = a.Get("ip", "127.0.0.1"),
+            ServerPort = a.GetInt("port", 502),
+            SerialPortName = serialPort ?? "",
+            BaudRate = a.GetInt("baud", 9600),
+            Parity = a.GetEnum("parity", System.IO.Ports.Parity.None),
+            StopBits = a.GetEnum("stopbits", System.IO.Ports.StopBits.One),
+            NodeId = a.GetInt("slave", 1),
+            ConnectionTimeoutMs = connectTimeout,
+            ResponseTimeoutMs = a.GetInt("response-timeout", connectTimeout),
+            Retries = a.GetInt("retries", 0),
+            Address = a.GetInt("address", 0),
+            Amount = a.GetInt("amount", 10),
+            Function = ParseFunction(a.Get("function"), defaultFunction),
+        };
+        return def;
+    }
 
     private static ModbusFunction ParseFunction(string? raw, ModbusFunction fallback)
     {
@@ -255,6 +293,80 @@ EXAMPLES
             Emit(new { ok = result.Success, function = "WriteSingleRegister", address = addr, value = reg, error = result.Error });
         }
         return Task.FromResult(result.Success ? 0 : 1);
+    }
+
+    // ─────────── mask (FC 22) ───────────────────────────────────────────
+
+    private static Task<int> RunMask(string[] argv)
+    {
+        var a = new Args(argv);
+        var def = DefFromArgs(a);
+        var addr = a.GetInt("address", 0);
+        var andMask = ParseUshort(a.Get("and-mask", "0xFFFF"));
+        var orMask  = ParseUshort(a.Get("or-mask",  "0x0000"));
+
+        using var session = new ModbusSession();
+        var connect = session.Connect(def);
+        if (!connect.Success)
+        {
+            Emit(new { ok = false, stage = "connect", error = connect.Error });
+            return Task.FromResult(1);
+        }
+
+        var result = session.MaskWriteRegister(addr, andMask, orMask);
+        Emit(new
+        {
+            ok = result.Success,
+            function = "MaskWriteRegister",
+            address = addr,
+            andMask = $"0x{andMask:X4}",
+            orMask  = $"0x{orMask:X4}",
+            error = result.Error,
+        });
+        return Task.FromResult(result.Success ? 0 : 1);
+    }
+
+    // ─────────── rw (FC 23) ─────────────────────────────────────────────
+
+    private static Task<int> RunReadWrite(string[] argv)
+    {
+        var a = new Args(argv);
+        var def = DefFromArgs(a);
+        var readAddr = a.GetInt("read-address", 0);
+        var readQty  = a.GetInt("read-amount", 1);
+        var writeAddr = a.GetInt("address", 0);
+        var values = (a.Get("value") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.Parse(s.Trim(), CultureInfo.InvariantCulture)).ToArray();
+
+        using var session = new ModbusSession();
+        var connect = session.Connect(def);
+        if (!connect.Success)
+        {
+            Emit(new { ok = false, stage = "connect", error = connect.Error });
+            return Task.FromResult(1);
+        }
+
+        var result = session.ReadWriteMultipleRegisters(writeAddr, values, readAddr, readQty);
+        Emit(new
+        {
+            ok = result.Success,
+            function = "ReadWriteMultipleRegisters",
+            readAddress = readAddr,
+            readAmount = readQty,
+            writeAddress = writeAddr,
+            written = values.Length,
+            values = result.Value,
+            error = result.Error,
+        });
+        return Task.FromResult(result.Success ? 0 : 1);
+    }
+
+    private static ushort ParseUshort(string raw)
+    {
+        var s = raw.Trim();
+        if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            return Convert.ToUInt16(s[2..], 16);
+        return ushort.Parse(s, NumberStyles.Integer, CultureInfo.InvariantCulture);
     }
 
     // ─────────── scan ───────────────────────────────────────────────────

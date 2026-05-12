@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -12,8 +13,7 @@ namespace OpenPoll.Services;
 
 /// <summary>
 /// Minimal embedded HTTP server that exposes the live state of every open poll.
-/// External scripts (Python, Node, curl) can subscribe to register values and write back —
-/// modern replacement for Modbus Poll's VBA / OLE automation.
+/// External scripts (Python, Node, curl) can subscribe to register values and write back.
 /// </summary>
 public sealed class HttpApiHost : IDisposable
 {
@@ -77,8 +77,12 @@ public sealed class HttpApiHost : IDisposable
         try
         {
             res.AddHeader("Access-Control-Allow-Origin", "*");
+            res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.AddHeader("Access-Control-Allow-Headers", "Content-Type");
             var path = req.Url?.AbsolutePath?.TrimEnd('/') ?? "";
             var method = req.HttpMethod;
+
+            if (method == "OPTIONS") { res.StatusCode = 204; return; }
 
             // Routes
             if (path == "/api/polls" && method == "GET")
@@ -101,11 +105,56 @@ public sealed class HttpApiHost : IDisposable
                 }).ToArray());
                 return;
             }
+            if (path.StartsWith("/api/polls/") && path.EndsWith("/write") && method == "POST")
+            {
+                var name = Uri.UnescapeDataString(path.Substring("/api/polls/".Length, path.Length - "/api/polls/".Length - "/write".Length));
+                var doc = _workspace.Documents.FirstOrDefault(d => d.Definition.Name == name);
+                if (doc is null) { res.StatusCode = 404; return; }
+                using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+                var body = await reader.ReadToEndAsync();
+                WriteRequest? wr;
+                try { wr = JsonSerializer.Deserialize<WriteRequest>(body, Json); }
+                catch (Exception ex) { res.StatusCode = 400; await WriteJsonAsync(res, new { ok = false, error = $"Invalid JSON: {ex.Message}" }); return; }
+                if (wr is null) { res.StatusCode = 400; await WriteJsonAsync(res, new { ok = false, error = "Missing body" }); return; }
+
+                var session = doc.Session;
+                var fnRaw = wr.Function?.ToLowerInvariant();
+                var ok = false; string? error = null;
+                if (fnRaw is "5" or "05" or "coil")
+                {
+                    var r = session.WriteSingleCoil(wr.Address, wr.Bool);
+                    ok = r.Success; error = r.Error;
+                }
+                else if (fnRaw is "6" or "06" or "register")
+                {
+                    var r = session.WriteSingleRegister(wr.Address, wr.Value);
+                    ok = r.Success; error = r.Error;
+                }
+                else if (fnRaw is "15" or "coils")
+                {
+                    var r = session.WriteMultipleCoils(wr.Address, wr.Bools ?? Array.Empty<bool>());
+                    ok = r.Success; error = r.Error;
+                }
+                else if (fnRaw is "16" or "registers")
+                {
+                    var r = session.WriteMultipleRegisters(wr.Address, wr.Values ?? Array.Empty<int>());
+                    ok = r.Success; error = r.Error;
+                }
+                else
+                {
+                    res.StatusCode = 400;
+                    await WriteJsonAsync(res, new { ok = false, error = $"Unknown function: {wr.Function}" });
+                    return;
+                }
+                await WriteJsonAsync(res, new { ok, function = fnRaw, address = wr.Address, error });
+                return;
+            }
             if ((path == "" || path == "/") && method == "GET")
             {
                 var html = "<!doctype html><html><body style='font-family:monospace;background:#0E1117;color:#E5E8EE'><h1>OpenPoll API</h1>" +
-                           "<p>GET /api/polls — list polls</p>" +
-                           "<p>GET /api/polls/{name}/values — current values</p></body></html>";
+                           "<p>GET  /api/polls — list polls</p>" +
+                           "<p>GET  /api/polls/{name}/values — current values</p>" +
+                           "<p>POST /api/polls/{name}/write {function:'06', address:0, value:42}</p></body></html>";
                 res.ContentType = "text/html; charset=utf-8";
                 var bytes = Encoding.UTF8.GetBytes(html);
                 await res.OutputStream.WriteAsync(bytes);
@@ -143,4 +192,14 @@ public sealed class HttpApiHost : IDisposable
     }
 
     public void Dispose() => _ = StopAsync();
+
+    private sealed class WriteRequest
+    {
+        public string? Function { get; set; }
+        public int Address { get; set; }
+        public int Value { get; set; }
+        public bool Bool { get; set; }
+        public int[]? Values { get; set; }
+        public bool[]? Bools { get; set; }
+    }
 }
