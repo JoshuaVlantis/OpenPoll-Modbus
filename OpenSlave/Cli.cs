@@ -69,6 +69,11 @@ ADDITIONAL TCP TRANSPORTS
   --ascii <port>         TCP port serving Modbus ASCII (':' + hex + LRC + CRLF)
   --tls <port>           TCP port serving Modbus over TLS (self-signed cert auto-generated)
 
+ADDITIONAL UDP / SERIAL TRANSPORTS
+  --rtu-over-udp <port>  UDP port carrying RTU framing
+  --ascii-over-udp <port> UDP port carrying ASCII framing
+  --ascii-serial <port>   serial device serving Modbus ASCII (7-bit, ':' framing)
+
 DATA SEEDING
   --hr <pairs>           seed holding registers, e.g. --hr 1=100,2=200
   --coil <pairs>         seed coils, e.g. --coil 1=1,3=1
@@ -224,6 +229,30 @@ EXAMPLES
         {
             try { document.StartTls(tlsPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving TLS on 0.0.0.0:{tlsPort} (self-signed cert)"); }
             catch (Exception ex) { Console.Error.WriteLine($"openslave: TLS listen failed: {ex.Message}"); }
+        }
+
+        var rtuUdpPort = GetIntArg(argv, "rtu-over-udp", -1);
+        if (rtuUdpPort > 0)
+        {
+            try { document.StartRtuOverUdp(rtuUdpPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving RTU-over-UDP on 0.0.0.0:{rtuUdpPort}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: RTU-over-UDP listen failed: {ex.Message}"); }
+        }
+
+        var asciiUdpPort = GetIntArg(argv, "ascii-over-udp", -1);
+        if (asciiUdpPort > 0)
+        {
+            try { document.StartAsciiOverUdp(asciiUdpPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving ASCII-over-UDP on 0.0.0.0:{asciiUdpPort}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: ASCII-over-UDP listen failed: {ex.Message}"); }
+        }
+
+        var asciiSerialPort = GetArg(argv, "ascii-serial");
+        if (asciiSerialPort is not null)
+        {
+            var baud = GetIntArg(argv, "baud", 9600);
+            var parity = Enum.TryParse<System.IO.Ports.Parity>(GetArg(argv, "parity"), true, out var p) ? p : System.IO.Ports.Parity.None;
+            var sb = Enum.TryParse<System.IO.Ports.StopBits>(GetArg(argv, "stopbits"), true, out var s) ? s : System.IO.Ports.StopBits.One;
+            try { document.StartAsciiOverSerial(asciiSerialPort, baud, parity, sb); if (!quiet) _stdout.WriteLine($"OpenSlave also serving ASCII on {asciiSerialPort}@{baud}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: ASCII-serial open failed: {ex.Message}"); }
         }
 
         using var stop = new ManualResetEventSlim(false);

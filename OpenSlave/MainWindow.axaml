@@ -86,6 +86,7 @@
                 <MenuItem Header="Switch to _Request Log" Click="OnFocusLog" />
                 <Separator />
                 <MenuItem Header="_Patterns…" Click="OnOpenPatterns" />
+                <MenuItem Header="Live _Chart…" Click="OnOpenChart" />
                 <Separator />
                 <MenuItem Header="Reveal _log folder…" Click="OnRevealLogFolder" />
             </MenuItem>

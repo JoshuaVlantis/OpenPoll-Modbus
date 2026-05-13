@@ -61,6 +61,39 @@ public partial class TestCenterView : Window
         LogOutput.Text = "";
     }
 
+    private void OnPreviewMbap(object? sender, RoutedEventArgs e)   => PreviewWrapped("MBAP", FrameMbap);
+    private void OnPreviewRtu(object? sender, RoutedEventArgs e)    => PreviewWrapped("RTU",  FrameRtu);
+    private void OnPreviewAscii(object? sender, RoutedEventArgs e)  => PreviewWrapped("ASCII", FrameAscii);
+
+    private void PreviewWrapped(string label, Func<byte, byte[], byte[]> wrap)
+    {
+        byte[] pdu;
+        try { pdu = ParseHexBytes(PduInput.Text ?? ""); }
+        catch (Exception ex) { Append($"Parse error: {ex.Message}"); return; }
+        if (pdu.Length == 0) { Append("Empty PDU"); return; }
+
+        var unitId = (byte)Math.Clamp(_connection.NodeId, 0, 255);
+        var framed = wrap(unitId, pdu);
+        Append($"{label,-5} ({framed.Length}B): {Hex(framed)}");
+    }
+
+    private static byte[] FrameMbap(byte unitId, byte[] pdu)
+    {
+        // Transaction id 0x0001 + protocol id 0x0000 + length + unit + pdu
+        int length = pdu.Length + 1;
+        var f = new byte[7 + pdu.Length];
+        f[0] = 0; f[1] = 1; f[2] = 0; f[3] = 0;
+        f[4] = (byte)(length >> 8); f[5] = (byte)length; f[6] = unitId;
+        Buffer.BlockCopy(pdu, 0, f, 7, pdu.Length);
+        return f;
+    }
+
+    private static byte[] FrameRtu(byte unitId, byte[] pdu) =>
+        Services.Transport.ModbusCrc.WrapRtu(unitId, pdu);
+
+    private static byte[] FrameAscii(byte unitId, byte[] pdu) =>
+        Services.Transport.AsciiOverTcpTransport.WrapAscii(unitId, pdu);
+
     private void OnClose(object? sender, RoutedEventArgs e) => Close();
 
     private void Append(string line)

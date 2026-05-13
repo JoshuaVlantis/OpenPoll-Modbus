@@ -1,11 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
-        x:Class="OpenPoll.Views.LiveChartView"
+        x:Class="OpenSlave.Views.LiveChartView"
         Title="Live Chart"
         Width="900" Height="540"
         WindowStartupLocation="CenterOwner">
-
     <DockPanel>
         <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderSubtleBrush}" Padding="8">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -19,26 +18,8 @@
                     <ComboBoxItem Content="15 min" />
                     <ComboBoxItem Content="1 h" />
                 </ComboBox>
-                <TextBlock VerticalAlignment="Center" Text="Y:" />
-                <TextBox Name="YMinInput" Width="80" Watermark="auto"
-                         FontFamily="{DynamicResource MonoFont}" />
-                <TextBlock VerticalAlignment="Center" Text=".." />
-                <TextBox Name="YMaxInput" Width="80" Watermark="auto"
-                         FontFamily="{DynamicResource MonoFont}" />
-                <Button Content="Apply Y" Click="OnApplyYRange" />
-                <TextBlock VerticalAlignment="Center" Text="Zoom:" />
-                <ComboBox Name="ZoomModeInput" SelectedIndex="0" SelectionChanged="OnZoomModeChanged">
-                    <ComboBoxItem Content="X" />
-                    <ComboBoxItem Content="Y" />
-                    <ComboBoxItem Content="Both" />
-                    <ComboBoxItem Content="None" />
-                </ComboBox>
-                <Button Content="Reset zoom" Click="OnResetZoom" />
-                <Button Content="Export PNG…" Click="OnExportPng" />
-                <Button Content="Export CSV…" Click="OnExportCsv" />
             </StackPanel>
         </Border>
-
         <lvc:CartesianChart Name="Chart" Margin="8" ZoomMode="X" />
     </DockPanel>
 </Window>

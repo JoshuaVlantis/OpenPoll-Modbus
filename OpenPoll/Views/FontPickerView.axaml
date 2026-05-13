@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.FontPickerView"
+        Title="Choose Font"
+        Width="420" Height="220"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBaseBrush}"
+        CanResize="False">
+    <DockPanel Margin="20">
+        <Border DockPanel.Dock="Bottom" Padding="0,16,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Content="Reset to default" Click="OnReset" />
+                <Button Content="Cancel" Click="OnCancel" />
+                <Button Content="OK" Click="OnOk" Classes="primary" />
+            </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Family" VerticalAlignment="Center"
+                       Margin="0,4,12,4" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <AutoCompleteBox Grid.Row="0" Grid.Column="1" Name="FamilyInput"
+                             Watermark="e.g. monospace, JetBrains Mono, Consolas"
+                             Margin="0,4" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Size" VerticalAlignment="Center"
+                       Margin="0,4,12,4" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <NumericUpDown Grid.Row="1" Grid.Column="1" Name="SizeInput"
+                           Minimum="6" Maximum="48" Value="13" Increment="1"
+                           FormatString="0"
+                           Margin="0,4" />
+
+            <Border Grid.Row="2" Grid.ColumnSpan="2" Margin="0,16,0,0"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+                    Padding="12">
+                <TextBlock Name="PreviewText" Text="0x42 · 1234.567 · the quick brown fox 123" />
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

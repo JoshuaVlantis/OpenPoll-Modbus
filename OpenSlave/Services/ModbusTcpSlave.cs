@@ -38,7 +38,12 @@ public sealed class ModbusTcpSlave : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _acceptLoop;
     private int _connectedClients;
-    private int _commEventCounter;   // increments per non-broadcast request (FC 11 surface)
+    private int _commEventCounter;       // FC 11 / FC 08 sub 0x0B+0x0E (bus + slave message count)
+    private int _commErrorCounter;       // FC 08 sub 0x0C — bus communication errors (CRC/LRC fails)
+    private int _exceptionCounter;       // FC 08 sub 0x0D — exception responses we've sent
+    private int _slaveNoResponseCounter; // FC 08 sub 0x0F — skipped/broadcast responses
+    private int _slaveBusyCounter;       // FC 08 sub 0x11 — exception-06 responses
+    private ushort _diagRegister;        // FC 08 sub 0x02 — bit register, vendor-defined
 
     private SerialPort? _serial;
     private CancellationTokenSource? _serialCts;
@@ -65,6 +70,21 @@ public sealed class ModbusTcpSlave : IDisposable
     private CancellationTokenSource? _tlsCts;
     private Task? _tlsLoop;
     public bool TlsRunning => _tlsListener is not null;
+
+    private SerialPort? _asciiSerial;
+    private CancellationTokenSource? _asciiSerialCts;
+    private Task? _asciiSerialLoop;
+    public bool AsciiSerialRunning => _asciiSerial?.IsOpen ?? false;
+
+    private UdpClient? _udpRtu;
+    private CancellationTokenSource? _udpRtuCts;
+    private Task? _udpRtuLoop;
+    public bool RtuOverUdpRunning => _udpRtu is not null;
+
+    private UdpClient? _udpAscii;
+    private CancellationTokenSource? _udpAsciiCts;
+    private Task? _udpAsciiLoop;
+    public bool AsciiOverUdpRunning => _udpAscii is not null;
 
     public bool[] Coils { get; } = new bool[TableSize];
     public bool[] DiscreteInputs { get; } = new bool[TableSize];
@@ -608,7 +628,176 @@ public sealed class ModbusTcpSlave : IDisposable
             X509KeyStorageFlags.Exportable | X509KeyStorageFlags.UserKeySet);
     }
 
-    public void Dispose() { Stop(); StopSerial(); StopUdp(); StopRtuOverTcp(); StopAsciiOverTcp(); StopTls(); }
+    /// <summary>Open a serial port and service Modbus ASCII frames (7-bit, ':' + hex + LRC + CRLF).</summary>
+    public void StartAsciiOverSerial(string portName, int baudRate = 9600, Parity parity = Parity.None, StopBits stopBits = StopBits.One)
+    {
+        if (AsciiSerialRunning) throw new InvalidOperationException("ASCII-over-serial slave already running.");
+        _asciiSerial = new SerialPort(portName, baudRate, parity, 7, stopBits)
+        {
+            ReadTimeout = 5000,
+            WriteTimeout = 1000,
+            NewLine = "\r\n",
+        };
+        _asciiSerial.Open();
+        _asciiSerialCts = new CancellationTokenSource();
+        var ct = _asciiSerialCts.Token;
+        _asciiSerialLoop = Task.Run(() => AsciiSerialReadLoop(ct));
+    }
+
+    public void StopAsciiOverSerial()
+    {
+        if (!AsciiSerialRunning) return;
+        try { _asciiSerialCts?.Cancel(); } catch { }
+        try { _asciiSerial?.Close(); } catch { }
+        try { _asciiSerialLoop?.Wait(TimeSpan.FromSeconds(1)); } catch { }
+        _asciiSerial = null;
+        _asciiSerialCts?.Dispose(); _asciiSerialCts = null; _asciiSerialLoop = null;
+    }
+
+    private void AsciiSerialReadLoop(CancellationToken ct)
+    {
+        var port = _asciiSerial!;
+        while (!ct.IsCancellationRequested && port.IsOpen)
+        {
+            string body;
+            try { body = port.ReadLine(); }
+            catch (TimeoutException) { continue; }
+            catch (OperationCanceledException) { return; }
+            catch { return; }
+
+            var raw = Encoding.ASCII.GetBytes(body + "\r\n");
+            if (!TryParseAsciiFrame(raw, raw.Length, out byte unitId, out byte fc, out byte[] pdu))
+                continue;
+            if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+            if (SkipResponses && _rng.Next(10) == 0) continue;
+
+            var work = new byte[pdu.Length + 1];
+            work[0] = unitId;
+            Buffer.BlockCopy(pdu, 0, work, 1, pdu.Length);
+
+            byte[] resp;
+            try { resp = ReturnExceptionBusy ? BuildException(fc, 0x06) : Dispatch(work, 1, pdu.Length); }
+            catch { continue; }
+
+            if (ResponseDelayMs > 0) Thread.Sleep(ResponseDelayMs);
+            if (unitId == 0) continue;
+
+            var frame = WrapAscii(unitId, resp);
+            try { port.Write(frame, 0, frame.Length); } catch { return; }
+        }
+    }
+
+    /// <summary>Listen for Modbus RTU framing inside UDP datagrams.</summary>
+    public void StartRtuOverUdp(int port)
+    {
+        if (RtuOverUdpRunning) throw new InvalidOperationException("RTU-over-UDP slave already running.");
+        _udpRtu = new UdpClient(port);
+        _udpRtuCts = new CancellationTokenSource();
+        var ct = _udpRtuCts.Token;
+        _udpRtuLoop = Task.Run(() => UdpRtuLoopAsync(ct));
+    }
+
+    public void StopRtuOverUdp()
+    {
+        if (!RtuOverUdpRunning) return;
+        try { _udpRtuCts?.Cancel(); } catch { }
+        try { _udpRtu?.Close(); } catch { }
+        try { _udpRtuLoop?.Wait(TimeSpan.FromSeconds(1)); } catch { }
+        _udpRtu = null;
+        _udpRtuCts?.Dispose(); _udpRtuCts = null; _udpRtuLoop = null;
+    }
+
+    private async Task UdpRtuLoopAsync(CancellationToken ct)
+    {
+        var udp = _udpRtu!;
+        while (!ct.IsCancellationRequested)
+        {
+            UdpReceiveResult datagram;
+            try { datagram = await udp.ReceiveAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return; }
+            catch (ObjectDisposedException) { return; }
+            catch { continue; }
+
+            var buf = datagram.Buffer;
+            if (buf.Length < 4 || !ModbusCrc.Verify(buf, 0, buf.Length)) continue;
+            byte unitId = buf[0];
+            if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+            if (SkipResponses && _rng.Next(10) == 0) continue;
+
+            int pduLen = buf.Length - 3;
+            byte[] resp;
+            try { resp = ReturnExceptionBusy ? BuildException(buf[1], 0x06) : Dispatch(buf, 1, pduLen); }
+            catch { continue; }
+
+            if (ResponseDelayMs > 0)
+            {
+                try { await Task.Delay(ResponseDelayMs, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+            }
+            if (unitId == 0) continue;
+
+            var frame = ModbusCrc.WrapRtu(unitId, resp);
+            try { await udp.SendAsync(frame, frame.Length, datagram.RemoteEndPoint).ConfigureAwait(false); } catch { }
+        }
+    }
+
+    /// <summary>Listen for Modbus ASCII framing inside UDP datagrams.</summary>
+    public void StartAsciiOverUdp(int port)
+    {
+        if (AsciiOverUdpRunning) throw new InvalidOperationException("ASCII-over-UDP slave already running.");
+        _udpAscii = new UdpClient(port);
+        _udpAsciiCts = new CancellationTokenSource();
+        var ct = _udpAsciiCts.Token;
+        _udpAsciiLoop = Task.Run(() => UdpAsciiLoopAsync(ct));
+    }
+
+    public void StopAsciiOverUdp()
+    {
+        if (!AsciiOverUdpRunning) return;
+        try { _udpAsciiCts?.Cancel(); } catch { }
+        try { _udpAscii?.Close(); } catch { }
+        try { _udpAsciiLoop?.Wait(TimeSpan.FromSeconds(1)); } catch { }
+        _udpAscii = null;
+        _udpAsciiCts?.Dispose(); _udpAsciiCts = null; _udpAsciiLoop = null;
+    }
+
+    private async Task UdpAsciiLoopAsync(CancellationToken ct)
+    {
+        var udp = _udpAscii!;
+        while (!ct.IsCancellationRequested)
+        {
+            UdpReceiveResult datagram;
+            try { datagram = await udp.ReceiveAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return; }
+            catch (ObjectDisposedException) { return; }
+            catch { continue; }
+
+            if (!TryParseAsciiFrame(datagram.Buffer, datagram.Buffer.Length, out byte unitId, out byte fc, out byte[] pdu)) continue;
+            if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+            if (SkipResponses && _rng.Next(10) == 0) continue;
+
+            var work = new byte[pdu.Length + 1];
+            work[0] = unitId;
+            Buffer.BlockCopy(pdu, 0, work, 1, pdu.Length);
+
+            byte[] resp;
+            try { resp = ReturnExceptionBusy ? BuildException(fc, 0x06) : Dispatch(work, 1, pdu.Length); }
+            catch { continue; }
+
+            if (ResponseDelayMs > 0)
+            {
+                try { await Task.Delay(ResponseDelayMs, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+            }
+            if (unitId == 0) continue;
+
+            var frame = WrapAscii(unitId, resp);
+            try { await udp.SendAsync(frame, frame.Length, datagram.RemoteEndPoint).ConfigureAwait(false); } catch { }
+        }
+    }
+
+    public void Dispose() { Stop(); StopSerial(); StopUdp(); StopRtuOverTcp(); StopAsciiOverTcp(); StopTls();
+        StopAsciiOverSerial(); StopRtuOverUdp(); StopAsciiOverUdp(); }
 
     private async Task AcceptLoopAsync(CancellationToken ct)
     {
@@ -896,13 +1085,50 @@ public sealed class ModbusTcpSlave : IDisposable
         // PDU: 0x08 SubFn(2) Data(2)  — minimum length 5
         Require(len == 5, 0x08, 0x03);
         ushort sub = (ushort)((buf[off + 1] << 8) | buf[off + 2]);
-        // Sub-function 0x0000 (Return Query Data) — echo whatever bytes the client sent.
-        if (sub != 0x0000) throw new ProtocolException(0x01);
-        var resp = new byte[5];
-        Buffer.BlockCopy(buf, off, resp, 0, 5);
+        ushort data = (ushort)((buf[off + 3] << 8) | buf[off + 4]);
+
+        ushort respData = sub switch
+        {
+            0x0000 => data,                                                              // Return Query Data
+            0x0001 => (ushort)(ResetCounters(restart: true) ? 0x0000 : 0x0000),          // Restart Comm Option (no listen-only side-effect)
+            0x0002 => _diagRegister,                                                     // Return Diagnostic Register
+            0x0004 => 0x0000,                                                            // Force Listen Only Mode — accepted (advisory)
+            0x000A => ResetCountersReturn(),                                             // Clear Counters and Diag Register
+            0x000B => (ushort)Volatile.Read(ref _commEventCounter),                      // Return Bus Message Count
+            0x000C => (ushort)Volatile.Read(ref _commErrorCounter),                      // Return Bus Comm Error Count
+            0x000D => (ushort)Volatile.Read(ref _exceptionCounter),                      // Return Bus Exception Error Count
+            0x000E => (ushort)Volatile.Read(ref _commEventCounter),                      // Return Slave Message Count
+            0x000F => (ushort)Volatile.Read(ref _slaveNoResponseCounter),                // Return Slave No Response Count
+            0x0010 => 0x0000,                                                            // Return Slave NAK Count — n/a on TCP/UDP
+            0x0011 => (ushort)Volatile.Read(ref _slaveBusyCounter),                      // Return Slave Busy Count
+            0x0012 => 0x0000,                                                            // Return Bus Character Overrun Count — n/a on TCP/UDP
+            _      => throw new ProtocolException(0x01),
+        };
+
         Interlocked.Increment(ref _commEventCounter);
-        RequestHandled?.Invoke(new RequestEvent(0x08, 0, 0, $"sub={sub:X4} echo"));
+        var resp = new byte[]
+        {
+            0x08, (byte)(sub >> 8), (byte)sub, (byte)(respData >> 8), (byte)respData,
+        };
+        RequestHandled?.Invoke(new RequestEvent(0x08, 0, 0, $"sub={sub:X4} → {respData:X4}"));
         return resp;
+    }
+
+    private bool ResetCounters(bool restart = false)
+    {
+        Interlocked.Exchange(ref _commErrorCounter, 0);
+        Interlocked.Exchange(ref _exceptionCounter, 0);
+        Interlocked.Exchange(ref _slaveNoResponseCounter, 0);
+        Interlocked.Exchange(ref _slaveBusyCounter, 0);
+        _diagRegister = 0;
+        if (restart) Interlocked.Exchange(ref _commEventCounter, 0);
+        return true;
+    }
+
+    private ushort ResetCountersReturn()
+    {
+        ResetCounters();
+        return 0x0000;
     }
 
     private byte[] HandleGetCommEventCounter(byte[] buf, int off, int len)

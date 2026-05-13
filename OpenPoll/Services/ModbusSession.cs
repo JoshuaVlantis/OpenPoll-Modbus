@@ -32,7 +32,8 @@ public sealed class ModbusSession : IDisposable
     private PollDefinition? _appliedSettings;
 
     private bool UsesAltTransport(ConnectionMode m) =>
-        m is ConnectionMode.Udp or ConnectionMode.RtuOverTcp or ConnectionMode.AsciiOverTcp or ConnectionMode.TcpTls;
+        m is ConnectionMode.Udp or ConnectionMode.RtuOverTcp or ConnectionMode.AsciiOverTcp or ConnectionMode.TcpTls
+          or ConnectionMode.AsciiOverSerial or ConnectionMode.RtuOverUdp or ConnectionMode.AsciiOverUdp;
 
     public bool Connected
     {
@@ -107,6 +108,25 @@ public sealed class ModbusSession : IDisposable
                     case ConnectionMode.TcpTls:
                         _altTransport = new TlsMbapTransport(settings.IpAddress, settings.ServerPort,
                             validateCert: false, handshakeTimeoutMs: Math.Max(50, settings.ConnectionTimeoutMs));
+                        break;
+                    case ConnectionMode.AsciiOverSerial:
+                        _serial = new SerialPort(settings.SerialPortName)
+                        {
+                            BaudRate = settings.BaudRate, Parity = settings.Parity, StopBits = settings.StopBits,
+                            DataBits = 7,   // ASCII is 7-bit per the spec
+                            ReadTimeout = Math.Max(50, settings.ResponseTimeoutMs),
+                            WriteTimeout = Math.Max(50, settings.ResponseTimeoutMs),
+                        };
+                        _serial.Open();
+                        _altTransport = new AsciiOverSerialTransport(_serial);
+                        break;
+                    case ConnectionMode.RtuOverUdp:
+                        _altTransport = new RtuOverUdpTransport(settings.IpAddress, settings.ServerPort,
+                            Math.Max(50, settings.ResponseTimeoutMs));
+                        break;
+                    case ConnectionMode.AsciiOverUdp:
+                        _altTransport = new AsciiOverUdpTransport(settings.IpAddress, settings.ServerPort,
+                            Math.Max(50, settings.ResponseTimeoutMs));
                         break;
                 }
 

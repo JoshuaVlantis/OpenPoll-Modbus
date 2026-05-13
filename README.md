@@ -8,7 +8,7 @@ Free, open-source Modbus tooling for engineers — runs natively on Linux, Windo
 
 Modbus has been an open protocol since 1979. Tooling around it should be open too.
 
-> **Status:** v2.2.0 · 212 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`.
+> **Status:** v2.3.0 · 221 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`. Feature parity with Modbus Poll / Modbus Slave from modbustools.com (excluding their Windows-only OLE/COM interface — superseded by our HTTP REST + WebSocket API).
 
 ---
 
@@ -74,7 +74,7 @@ dotnet run --project OpenPoll    # master window
 | 22 | Mask Write Register | ✅ | **atomic on TCP** in v2.2 (raw PDU); R-M-W fallback on serial RTU |
 | 23 | Read/Write Multiple Registers | ✅ | atomic write-then-read |
 | 43 / 14 | Read Device Identification | ✅ | Tools menu + `openpoll devid` CLI; supports basic/regular/specific |
-| 08 | Diagnostics (sub-fn 0) | ✅ | `openpoll diag` — echo round-trip |
+| 08 | Diagnostics | ✅ | Full spec sub-function set: 00 Query echo · 01 Restart Comm · 02 Diag Register · 04 Force Listen · 0A Clear Counters · 0B Bus Msg · 0C Comm Err · 0D Excpt Err · 0E Slave Msg · 0F No Resp · 11 Slave Busy |
 | 11 | Get Comm Event Counter | ✅ | `openpoll ec` |
 | 17 | Report Server ID | ✅ | `openpoll srvid` |
 
@@ -82,12 +82,17 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 
 ### Transports
 
-- **Modbus TCP** (any port; default 502)
-- **Modbus RTU over Serial** (RS-232 / RS-485 / USB serial converters); device picker enumerates `/dev/ttyUSB*`, `/dev/ttyACM*`, `/dev/ttyS*` on Linux
-- **Modbus over UDP** (`--udp <port>`) — same MBAP framing, one datagram per request
-- **Modbus RTU over TCP** (`--rtu-over-tcp <port>`) — gateway boxes from various vendors expose this
-- **Modbus ASCII over TCP** (`--ascii <port>`) — `:` + hex + LRC + CRLF framing
-- **Modbus TCP over TLS** (`--tls <port>`) — RFC 9300; server cert not validated by default
+| Transport | Master flag | Slave flag |
+|-----------|-------------|------------|
+| Modbus TCP | (default) | `--port` |
+| Modbus RTU over Serial | `--serial /dev/ttyUSB0 --baud --parity --stopbits` | `--serial …` |
+| Modbus ASCII over Serial | `--ascii-serial /dev/ttyUSB0 --baud …` (7N1 default) | `--ascii-serial …` |
+| Modbus over UDP | `--udp <port>` | `--udp <port>` |
+| Modbus RTU over TCP | `--rtu-over-tcp <port>` | `--rtu-over-tcp <port>` |
+| Modbus ASCII over TCP | `--ascii <port>` | `--ascii <port>` |
+| Modbus RTU over UDP | `--rtu-over-udp <port>` | `--rtu-over-udp <port>` |
+| Modbus ASCII over UDP | `--ascii-over-udp <port>` | `--ascii-over-udp <port>` |
+| Modbus TCP + TLS | `--tls <port>` | `--tls <port>` (self-signed cert auto-generated) |
 
 ### Connection settings
 
@@ -123,8 +128,12 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 - **Test Center** — Tools → Test Center: hand-craft a raw Modbus PDU, send it, inspect the bytes coming back
 - **Read Device Identification** — Tools → Read Device ID…: pulls FC 43 objects (vendor/product/version/URL/…) into a grid
 - **CSV snapshot recorder** — Tools → Start CSV snapshot: appends one wide CSV row per second with the live cell values
-- **Live chart export** — chart window has Y-axis limit inputs, Export → PNG, Export → CSV
+- **XLSX snapshot recorder** — Tools → Start XLSX snapshot: same shape, saves a real .xlsx workbook on stop (via ClosedXML)
+- **Live chart** — Y-axis min/max inputs, ZoomMode selector (X/Y/Both/None), Reset zoom, Export → PNG, Export → CSV
 - **Print to PDF** — Tools → Print to PDF… (Ctrl+P): A4 multi-page table snapshot via SkiaSharp
+- **Per-poll font** — File → Font…: family + size, applied to the VALUE column
+- **Export to OpenSlave workspace** — File → Export active poll: generate a matching `.openslave` file
+- **Test Center framing preview** — see exactly which bytes go on the wire as MBAP / RTU / ASCII
 - **Status pill** (idle / connected / error) on every tab
 
 ### Automation
@@ -168,9 +177,12 @@ OpenSlave serves all six transports concurrently from the same process — flip 
 |-----------|----------|-------|
 | Modbus TCP | `--port <n>` | default 1502; non-privileged |
 | Modbus RTU over serial | `--serial <port> --baud --parity --stopbits` | CRC-16-MODBUS framing |
+| Modbus ASCII over serial | `--ascii-serial <port> --baud …` | 7-bit, `:` + hex + LRC + CRLF |
 | Modbus over UDP | `--udp <port>` | one MBAP frame per datagram |
 | Modbus RTU over TCP | `--rtu-over-tcp <port>` | gateway-style; no MBAP |
 | Modbus ASCII over TCP | `--ascii <port>` | `:` + hex + LRC + CRLF |
+| Modbus RTU over UDP | `--rtu-over-udp <port>` | RTU framing in UDP datagrams |
+| Modbus ASCII over UDP | `--ascii-over-udp <port>` | ASCII framing in UDP datagrams |
 | Modbus TCP over TLS | `--tls <port>` | self-signed cert auto-generated |
 
 Spec-compliant 0-indexed addressing (the original EasyModbus-backed slave was 1-indexed by quirk; **breaking change in v2.1.0**). Up to **65536 registers/coils** per table. Multiple concurrent clients across every transport.
@@ -200,6 +212,7 @@ Spec-compliant 0-indexed addressing (the original EasyModbus-backed slave was 1-
 - **Workspace save/load** — `.openslave` JSON (`Ctrl+O` / `Ctrl+S`); preserves slave definition, all seeded register values, per-cell type/order, error-simulation settings, and pattern generators
 - **Multiple slave windows** — `File → New Slave Window` opens another simulator in the same process on the next default port (1502 → 1503 → ...)
 - **Pattern generators** — View → Patterns…: sine / triangle / square / sawtooth / random-walk drive register values on every sync tick (~200 ms)
+- **Live chart** — View → Live Chart…: real-time line chart of selected holding registers, with X-axis zoom
 - **Live request log** with timestamps; clear / save to file / auto-scroll
 - **Status pill** + connected-client counter + request counter
 - **CLI mode** — full headless slave for CI, scripted scenarios, docker functional tests

@@ -77,6 +77,26 @@ public partial class LiveChartView : Window
     private static string Format(double? v) =>
         v is null ? "auto" : v.Value.ToString("G6", CultureInfo.InvariantCulture);
 
+    private void OnZoomModeChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        Chart.ZoomMode = ZoomModeInput.SelectedIndex switch
+        {
+            0 => LiveChartsCore.Measure.ZoomAndPanMode.X,
+            1 => LiveChartsCore.Measure.ZoomAndPanMode.Y,
+            2 => LiveChartsCore.Measure.ZoomAndPanMode.Both,
+            _ => LiveChartsCore.Measure.ZoomAndPanMode.None,
+        };
+    }
+
+    private void OnResetZoom(object? sender, RoutedEventArgs e)
+    {
+        if (Chart.YAxes is IEnumerable<Axis> ys)
+            foreach (var y in ys) { y.MinLimit = null; y.MaxLimit = null; }
+        if (Chart.XAxes is IEnumerable<Axis> xs)
+            foreach (var x in xs) { x.MinLimit = null; x.MaxLimit = null; }
+        StatusText.Text = "Zoom reset";
+    }
+
     private async void OnExportPng(object? sender, RoutedEventArgs e)
     {
         try

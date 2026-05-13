@@ -160,6 +160,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnOpenChart(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Take up to 5 selected holding-register cells, or default to the first 5.
+            var selected = HoldingGrid.SelectedItems?.Cast<Models.RegisterCell>().ToList() ?? new System.Collections.Generic.List<Models.RegisterCell>();
+            var pool = _document.HoldingRegisters;
+            var indexes = (selected.Count > 0
+                ? selected.Select(c => pool.IndexOf(c))
+                : Enumerable.Range(0, Math.Min(5, pool.Count))
+              ).Where(i => i >= 0 && i < pool.Count).ToList();
+            new Views.LiveChartView(pool, indexes).Show(this);
+        }
+        catch (Exception ex)
+        {
+            FileLogger.Error("chart failed: " + ex);
+            SetStatus(_document.Running, "Error: " + ex.Message);
+        }
+    }
+
     // ─────── Cell edits ──────────────────────────────────────────────
 
     private void OnCoilEdit(object? sender, DataGridRowEditEndedEventArgs e)

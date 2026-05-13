@@ -26,6 +26,10 @@
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <Button Content="Send" Click="OnSend" Classes="primary" />
                     <Button Content="Clear log" Click="OnClear" />
+                    <TextBlock Text="Preview wrapped:" VerticalAlignment="Center" />
+                    <Button Content="MBAP" Click="OnPreviewMbap" />
+                    <Button Content="RTU (+CRC)" Click="OnPreviewRtu" />
+                    <Button Content="ASCII (+LRC)" Click="OnPreviewAscii" />
                 </StackPanel>
             </StackPanel>
         </Border>

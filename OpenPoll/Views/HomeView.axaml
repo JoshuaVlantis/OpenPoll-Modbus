@@ -26,11 +26,13 @@
                         <Separator />
                         <MenuItem Header="Open workspace…" Click="OnLoadWorkspace" InputGesture="Ctrl+O" />
                         <MenuItem Header="Save workspace…" Click="OnSaveWorkspace" InputGesture="Ctrl+S" />
+                        <MenuItem Header="Export active poll → OpenSlave workspace…" Click="OnExportToSlave" />
                         <MenuItem x:Name="RecentMenu" Header="Recent workspaces" />
                         <Separator />
                         <MenuItem Header="Setup…" Click="OnOpenSetup" />
                         <MenuItem Header="Connection Setup…" Click="OnOpenConnectionSetup" />
                         <MenuItem Header="Colour Rules…" Click="OnOpenColourRules" />
+                        <MenuItem Header="Font…" Click="OnOpenFontPicker" />
                         <Separator />
                         <MenuItem Header="Manual write — Single Coil (FC 05)…"     Click="OnManualWrite05" InputGesture="F5" />
                         <MenuItem Header="Manual write — Single Register (FC 06)…" Click="OnManualWrite06" InputGesture="F6" />
@@ -48,7 +50,8 @@
                         <Separator />
                         <MenuItem Header="Print to PDF…" Click="OnPrintToPdf" InputGesture="Ctrl+P" />
                         <Separator />
-                        <MenuItem x:Name="CsvLogMenu" Header="Start CSV snapshot (1s)" Click="OnToggleCsvSnapshot" />
+                        <MenuItem x:Name="CsvLogMenu"  Header="Start CSV snapshot (1s)"  Click="OnToggleCsvSnapshot" />
+                        <MenuItem x:Name="XlsxLogMenu" Header="Start XLSX snapshot (1s)" Click="OnToggleXlsxSnapshot" />
                         <MenuItem Header="Reveal log folder…" Click="OnRevealLogFolder" />
                         <Separator />
                         <MenuItem x:Name="HttpApiMenu" Header="Start HTTP API (:8080)" Click="OnToggleHttpApi" />

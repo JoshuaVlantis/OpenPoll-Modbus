@@ -49,6 +49,12 @@ public sealed class PollDefinition
     /// </summary>
     public List<ColourRule> ColourRules { get; set; } = new();
 
+    /// <summary>Display font family for the grid (empty = theme default monospace).</summary>
+    public string DisplayFontFamily { get; set; } = "";
+
+    /// <summary>Display font size in points (0 = theme default).</summary>
+    public double DisplayFontSize { get; set; }
+
     public PollDefinition Clone() => new()
     {
         Name = Name,
@@ -70,5 +76,7 @@ public sealed class PollDefinition
         DisplayOneIndexed = DisplayOneIndexed,
         WordOrder = WordOrder,
         ColourRules = ColourRules.Select(r => r.Clone()).ToList(),
+        DisplayFontFamily = DisplayFontFamily,
+        DisplayFontSize = DisplayFontSize,
     };
 }

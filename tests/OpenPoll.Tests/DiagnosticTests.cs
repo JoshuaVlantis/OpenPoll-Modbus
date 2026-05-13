@@ -77,4 +77,42 @@ public sealed class DiagnosticTests : IDisposable
         r.Value.Id.Should().Be("Bench");
         r.Value.RunStatus.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData(0x0002)]   // Return Diagnostic Register
+    [InlineData(0x000B)]   // Return Bus Message Count
+    [InlineData(0x000D)]   // Return Bus Exception Error Count
+    [InlineData(0x000F)]   // Return Slave No Response Count
+    public void Fc08_KnownSubFunctions_ReturnSuccess(int sub)
+    {
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var r = s.Diagnostic((ushort)sub, 0);
+        r.Success.Should().BeTrue(r.Error);
+    }
+
+    [Fact]
+    public void Fc08_UnknownSubFunction_ReturnsIllegalFunction()
+    {
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var r = s.Diagnostic(0x00FF, 0);
+        r.Success.Should().BeFalse();
+        r.Error.Should().Contain("01");   // exception code 01 — Illegal Function
+    }
+
+    [Fact]
+    public void Fc08_ClearCounters_ResetsBusMessageCount()
+    {
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        s.ReadHoldingRegisters(0, 1);
+        s.ReadHoldingRegisters(0, 1);
+        s.Diagnostic(0x000A, 0).Success.Should().BeTrue();   // Clear counters
+        var r = s.Diagnostic(0x000B, 0);
+        r.Success.Should().BeTrue(r.Error);
+        // After clear there's still the diagnostic request itself that ticked the counter, so
+        // expect a small count (1) rather than 0.
+        r.Value.Should().BeLessOrEqualTo(2);
+    }
 }

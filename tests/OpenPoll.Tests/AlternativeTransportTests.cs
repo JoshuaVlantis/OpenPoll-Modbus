@@ -95,4 +95,36 @@ public sealed class AlternativeTransportTests
         r.Success.Should().BeTrue(r.Error);
         r.Value!.Single().Should().Be(0xCAFE);
     }
+
+    [Fact]
+    public void RtuOverUdp_ReadHoldingRegisters_RoundTrips()
+    {
+        using var slave = new ModbusTcpSlave();
+        int port = FreeUdpPort();
+        slave.StartRtuOverUdp(port);
+        slave.HoldingRegisters[5] = 7777;
+
+        using var s = new ModbusSession();
+        var def = new PollDefinition { ConnectionMode = ConnectionMode.RtuOverUdp, IpAddress = "127.0.0.1", ServerPort = port, NodeId = 1, ConnectionTimeoutMs = 2000, ResponseTimeoutMs = 2000 };
+        s.Connect(def).Success.Should().BeTrue();
+        var r = s.ReadHoldingRegisters(5, 1);
+        r.Success.Should().BeTrue(r.Error);
+        r.Value!.Single().Should().Be(7777);
+    }
+
+    [Fact]
+    public void AsciiOverUdp_WriteThenRead_RoundTrips()
+    {
+        using var slave = new ModbusTcpSlave();
+        int port = FreeUdpPort();
+        slave.StartAsciiOverUdp(port);
+
+        using var s = new ModbusSession();
+        var def = new PollDefinition { ConnectionMode = ConnectionMode.AsciiOverUdp, IpAddress = "127.0.0.1", ServerPort = port, NodeId = 1, ConnectionTimeoutMs = 2000, ResponseTimeoutMs = 2000 };
+        s.Connect(def).Success.Should().BeTrue();
+        s.WriteSingleRegister(11, 1234).Success.Should().BeTrue();
+        var r = s.ReadHoldingRegisters(11, 1);
+        r.Success.Should().BeTrue(r.Error);
+        r.Value!.Single().Should().Be(1234);
+    }
 }

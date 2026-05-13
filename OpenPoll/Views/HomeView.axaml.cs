@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using OpenPoll.Models;
 using OpenPoll.Services;
 
@@ -458,6 +459,35 @@ public partial class HomeView : Window
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
+    private async void OnOpenFontPicker(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var changed = await new FontPickerView(_document.Definition).ShowDialog<bool>(this);
+            if (changed) ApplyFontToGrid();
+        }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
+    private void ApplyFontToGrid()
+    {
+        var family = _document.Definition.DisplayFontFamily;
+        var size = _document.Definition.DisplayFontSize;
+        // Apply to all visible value-cell TextBlocks. The template column renders each row as a
+        // TextBlock whose DataContext is the RegisterRow.
+        foreach (var tb in DataGrid.GetVisualDescendants().OfType<TextBlock>())
+        {
+            if (tb.DataContext is RegisterRow)
+            {
+                if (!string.IsNullOrWhiteSpace(family))
+                {
+                    try { tb.FontFamily = new Avalonia.Media.FontFamily(family); } catch { }
+                }
+                if (size > 0) tb.FontSize = size;
+            }
+        }
+    }
+
     private void OnOpenScraper(object? sender, RoutedEventArgs e)
     {
         try { new ModbusScraperView().Show(this); }
@@ -541,6 +571,30 @@ public partial class HomeView : Window
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
+    private XlsxSnapshotLogger? _xlsxLogger;
+    private async void OnToggleXlsxSnapshot(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_xlsxLogger is { IsRunning: true })
+            {
+                await _xlsxLogger.StopAsync();
+                ApplyStatusVisuals(StatusKind.Ok, $"XLSX snapshot saved → {_xlsxLogger.Path} ({_xlsxLogger.RowsWritten} rows)");
+                _xlsxLogger = null;
+                XlsxLogMenu.Header = "Start XLSX snapshot (1s)";
+            }
+            else
+            {
+                var path = XlsxSnapshotLogger.DefaultPath(_document.Definition.Name);
+                _xlsxLogger = new XlsxSnapshotLogger(_document, intervalMs: 1000, path);
+                _xlsxLogger.Start();
+                ApplyStatusVisuals(StatusKind.Ok, $"XLSX snapshot → {path}");
+                XlsxLogMenu.Header = "Stop XLSX snapshot";
+            }
+        }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
     private CsvSnapshotLogger? _csvLogger;
     private async void OnToggleCsvSnapshot(object? sender, RoutedEventArgs e)
     {
@@ -597,6 +651,27 @@ public partial class HomeView : Window
     private async void OnSaveWorkspace(object? sender, RoutedEventArgs e)
     {
         try { await WorkspaceFileService.SaveAsync(this, _workspace); RefreshRecentMenu(); }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
+    private async void OnExportToSlave(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var pick = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+            {
+                Title = "Export to OpenSlave workspace",
+                DefaultExtension = "openslave",
+                SuggestedFileName = $"{_document.Definition.Name}.openslave",
+                FileTypeChoices = new[]
+                {
+                    new Avalonia.Platform.Storage.FilePickerFileType("OpenSlave workspace") { Patterns = new[] { "*.openslave" } },
+                },
+            });
+            if (pick is null) return;
+            PollToSlaveExporter.Export(pick.Path.LocalPath, _document.Definition);
+            ApplyStatusVisuals(StatusKind.Ok, $"Slave workspace saved → {pick.Path.LocalPath}");
+        }
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 

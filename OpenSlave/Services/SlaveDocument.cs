@@ -221,6 +221,16 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
     public void StartTls(int port, System.Security.Cryptography.X509Certificates.X509Certificate2? cert = null) => _slave.StartTls(port, cert);
     public void StopTls() => _slave.StopTls();
 
+    public void StartAsciiOverSerial(string portName, int baud, System.IO.Ports.Parity parity, System.IO.Ports.StopBits stopBits) =>
+        _slave.StartAsciiOverSerial(portName, baud, parity, stopBits);
+    public void StopAsciiOverSerial() => _slave.StopAsciiOverSerial();
+
+    public void StartRtuOverUdp(int port) => _slave.StartRtuOverUdp(port);
+    public void StopRtuOverUdp() => _slave.StopRtuOverUdp();
+
+    public void StartAsciiOverUdp(int port) => _slave.StartAsciiOverUdp(port);
+    public void StopAsciiOverUdp() => _slave.StopAsciiOverUdp();
+
     public void Stop()
     {
         if (!Running) return;
@@ -230,6 +240,9 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
         _slave.StopRtuOverTcp();
         _slave.StopAsciiOverTcp();
         _slave.StopTls();
+        _slave.StopAsciiOverSerial();
+        _slave.StopRtuOverUdp();
+        _slave.StopAsciiOverUdp();
         Running = false;
         StatusMessage = "Stopped";
     }
