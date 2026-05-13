@@ -335,6 +335,11 @@
                                       IsReadOnly="False" RowEditEnded="OnHoldingEdit"
                                       BeginningEdit="OnRowBeginningEdit"
                                       CanUserSortColumns="False" CanUserReorderColumns="False">
+                                <DataGrid.Styles>
+                                    <Style Selector="DataGridRow">
+                                        <Setter Property="Opacity" Value="{ReflectionBinding ConsumedOpacity}" />
+                                    </Style>
+                                </DataGrid.Styles>
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="Type: Signed (16)" Click="OnSetType_Holding_Signed" />
@@ -379,6 +384,11 @@
                                       IsReadOnly="False" RowEditEnded="OnInputEdit"
                                       BeginningEdit="OnRowBeginningEdit"
                                       CanUserSortColumns="False" CanUserReorderColumns="False">
+                                <DataGrid.Styles>
+                                    <Style Selector="DataGridRow">
+                                        <Setter Property="Opacity" Value="{ReflectionBinding ConsumedOpacity}" />
+                                    </Style>
+                                </DataGrid.Styles>
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="Type: Signed (16)" Click="OnSetType_Input_Signed" />

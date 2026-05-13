@@ -118,13 +118,34 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
         {
             int addr = start + i;
             if (addr >= ModbusTcpSlave.TableSize) break;
-            dest.Add(new RegisterCell
+            var cell = new RegisterCell
             {
                 Address = addr,
                 DisplayAddress = addr + baseShift,
                 RawValue = table[addr],
                 RawWords = SnapshotWords(table, addr, 4),
-            });
+            };
+            // Mirrors PollDocument: changing a cell's data type re-evaluates which neighbouring
+            // cells are "consumed" by a multi-word type, so the grid dims them.
+            cell.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(RegisterCell.DataType))
+                    RecomputeConsumedFlags(dest);
+            };
+            dest.Add(cell);
+        }
+        RecomputeConsumedFlags(dest);
+    }
+
+    private static void RecomputeConsumedFlags(ObservableCollection<RegisterCell> cells)
+    {
+        for (int i = 0; i < cells.Count; i++) cells[i].IsConsumed = false;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            if (cells[i].IsConsumed) continue;
+            int words = Math.Max(1, cells[i].DataType.WordCount());
+            for (int j = 1; j < words && i + j < cells.Count; j++)
+                cells[i + j].IsConsumed = true;
         }
     }
 

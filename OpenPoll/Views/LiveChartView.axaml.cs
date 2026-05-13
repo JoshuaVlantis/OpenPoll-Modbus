@@ -79,6 +79,10 @@ public partial class LiveChartView : Window
 
     private void OnZoomModeChanged(object? sender, SelectionChangedEventArgs e)
     {
+        // Avalonia fires SelectionChanged once during XAML load (the declarative SelectedIndex=0
+        // triggers it), and at that moment the Chart field further down the tree is still null.
+        // Bail out until the named control exists.
+        if (Chart is null) return;
         Chart.ZoomMode = ZoomModeInput.SelectedIndex switch
         {
             0 => LiveChartsCore.Measure.ZoomAndPanMode.X,

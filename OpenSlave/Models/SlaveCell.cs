@@ -55,6 +55,24 @@ public sealed class RegisterCell : INotifyPropertyChanged
     private CellDataType _dataType = CellDataType.Unsigned;
     private WordOrder _wordOrder = WordOrder.BigEndian;
     private bool _isEditing;
+    private bool _isConsumed;
+
+    /// <summary>True when this cell's register is consumed by a multi-word data type on the cell
+    /// above it (e.g. row N is the second word of a Float-32 declared on row N-1). The grid dims
+    /// these rows so the relationship is visible — same affordance as Modbus Slave's greying.</summary>
+    public bool IsConsumed
+    {
+        get => _isConsumed;
+        set
+        {
+            if (_isConsumed == value) return;
+            _isConsumed = value;
+            OnChanged(nameof(IsConsumed));
+            OnChanged(nameof(ConsumedOpacity));
+        }
+    }
+
+    public double ConsumedOpacity => _isConsumed ? 0.35 : 1.0;
 
     /// <summary>Wire-protocol address (always 0-based).</summary>
     public int Address { get; init; }

@@ -402,7 +402,24 @@ public partial class HomeView : Window
         if (DataGrid.SelectedItem is not RegisterRow row) return;
         if (!_document.Definition.Function.IsRegister()) return;
         row.DataType = type;
-        row.Value = ValueFormatter.FormatRegister(row.RawWords, type, _document.Definition.WordOrder);
+        row.Value = ValueFormatter.FormatRegister(row.RawWords, type, row.WordOrder);
+    }
+
+    // ────────── word-order context menu (per-row, mirrors OpenSlave) ──────────
+
+    private void OnOrderBE  (object? sender, RoutedEventArgs e) => SetOrder(WordOrder.BigEndian);
+    private void OnOrderLE  (object? sender, RoutedEventArgs e) => SetOrder(WordOrder.LittleEndian);
+    private void OnOrderBEBS(object? sender, RoutedEventArgs e) => SetOrder(WordOrder.BigEndianByteSwap);
+    private void OnOrderLEBS(object? sender, RoutedEventArgs e) => SetOrder(WordOrder.LittleEndianByteSwap);
+
+    private void SetOrder(WordOrder order)
+    {
+        // Apply to every selected row so users can re-endian a contiguous range in one shot.
+        foreach (var row in DataGrid.SelectedItems.OfType<RegisterRow>())
+        {
+            row.WordOrder = order;
+            row.Value = ValueFormatter.FormatRegister(row.RawWords, row.DataType, order);
+        }
     }
 
     // ────────── double-click → BinaryEditor ──────────

@@ -237,6 +237,13 @@
                           BeginningEdit="OnBeginningEdit"
                           RowEditEnded="OnRowEditEnded"
                           DoubleTapped="OnGridDoubleTapped">
+                    <DataGrid.Styles>
+                        <!-- Dim rows whose underlying register is consumed by a multi-word data type
+                             on the row above. ConsumedOpacity is 0.35 when consumed, 1.0 otherwise. -->
+                        <Style Selector="DataGridRow">
+                            <Setter Property="Opacity" Value="{ReflectionBinding ConsumedOpacity}" />
+                        </Style>
+                    </DataGrid.Styles>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="FUNC"
                                             Binding="{ReflectionBinding Function}"
@@ -264,8 +271,11 @@
                                 <DataTemplate>
                                     <TextBox Text="{ReflectionBinding Value, Mode=TwoWay}"
                                              FontFamily="{DynamicResource MonoFont}"
+                                             FontWeight="Medium"
                                              BorderThickness="0"
-                                             Padding="12,0" />
+                                             Padding="12,0"
+                                             VerticalAlignment="Stretch"
+                                             VerticalContentAlignment="Center" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
@@ -289,6 +299,12 @@
                             <MenuItem x:Name="MenuItemUnsigned64" Header="  Unsigned 64" Click="OnTypeUnsigned64" />
                             <MenuItem x:Name="MenuItemHex64"      Header="  Hex 64"      Click="OnTypeHex64" />
                             <MenuItem x:Name="MenuItemDouble"     Header="  Double (64)" Click="OnTypeDouble" />
+                            <Separator />
+                            <MenuItem x:Name="MenuItemWordOrderHeader" Header="Word order (multi-reg only)" IsEnabled="False" />
+                            <MenuItem x:Name="MenuItemOrderBE"   Header="  Big-endian (ABCD)"          Click="OnOrderBE" />
+                            <MenuItem x:Name="MenuItemOrderLE"   Header="  Little-endian (DCBA)"       Click="OnOrderLE" />
+                            <MenuItem x:Name="MenuItemOrderBEBS" Header="  Big-endian byte-swap (BADC)" Click="OnOrderBEBS" />
+                            <MenuItem x:Name="MenuItemOrderLEBS" Header="  Little-endian byte-swap (CDAB)" Click="OnOrderLEBS" />
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                 </DataGrid>

@@ -241,7 +241,6 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
         EnsureRowSlots();
         var n = Math.Min(Rows.Count, values.Length);
         var prefix = def.Function.Prefix();
-        var order = def.WordOrder;
         for (int i = 0; i < n; i++)
         {
             var row = Rows[i];
@@ -257,7 +256,10 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
             for (int w = 0; w < available; w++) packed[w] = values[i + w];
 
             row.RawWords = packed;
-            row.Value = row.ApplyDisplayTransform(ValueFormatter.FormatRegister(packed, row.DataType, order));
+            // Per-row WordOrder, seeded from def.WordOrder when the row was created in
+            // EnsureRowSlots. Using def.WordOrder here would overwrite per-row overrides on
+            // every tick — which was the "byte order reverts immediately" bug.
+            row.Value = row.ApplyDisplayTransform(ValueFormatter.FormatRegister(packed, row.DataType, row.WordOrder));
             ApplyColourRule(row, def.ColourRules, row.Value);
         }
         PollCount++;
@@ -302,15 +304,41 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
             _editingRow = null;
             for (int i = 0; i < def.Amount; i++)
             {
-                Rows.Add(new RegisterRow
+                var row = new RegisterRow
                 {
                     Function = prefix,
                     Address = i + def.Address,
                     DisplayAddress = (i + def.Address) + (def.DisplayOneIndexed ? 1 : 0),
                     Value = "",
                     DataType = CellDataType.Signed
-                });
+                };
+                // When a row's data type changes, recompute which subsequent rows are consumed
+                // by the new word count. Fully automatic — no need for callers to remember.
+                row.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(RegisterRow.DataType))
+                        RecomputeConsumedFlags();
+                };
+                Rows.Add(row);
             }
+            RecomputeConsumedFlags();
+        }
+    }
+
+    /// <summary>
+    /// Walk the row list and mark each row that's "consumed" by a multi-word data type on the
+    /// row above it. First-claim wins — if row 0 declares a 32-bit type, row 1 is marked
+    /// consumed and won't itself extend further. UI binds <see cref="RegisterRow.ConsumedOpacity"/>.
+    /// </summary>
+    public void RecomputeConsumedFlags()
+    {
+        for (int i = 0; i < Rows.Count; i++) Rows[i].IsConsumed = false;
+        for (int i = 0; i < Rows.Count; i++)
+        {
+            if (Rows[i].IsConsumed) continue;
+            int words = Math.Max(1, Rows[i].DataType.WordCount());
+            for (int j = 1; j < words && i + j < Rows.Count; j++)
+                Rows[i + j].IsConsumed = true;
         }
     }
 

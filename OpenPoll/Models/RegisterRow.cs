@@ -13,6 +13,7 @@ public sealed class RegisterRow : INotifyPropertyChanged
     private int _displayAddress;
     private string _value = "";
     private CellDataType _dataType = CellDataType.Signed;
+    private WordOrder _wordOrder = WordOrder.BigEndian;
     private int[] _rawWords = Array.Empty<int>();
     private bool _rawBool;
     private double _scale = 1.0;
@@ -21,6 +22,7 @@ public sealed class RegisterRow : INotifyPropertyChanged
     private bool _scalingEnabled;
     private Dictionary<long, string>? _valueNames;
     private string? _foregroundHex;
+    private bool _isConsumed;
 
     public string Function
     {
@@ -52,6 +54,17 @@ public sealed class RegisterRow : INotifyPropertyChanged
     {
         get => _dataType;
         set => Set(ref _dataType, value);
+    }
+
+    /// <summary>
+    /// Per-row byte/word order for multi-register data types. Seeded from
+    /// <see cref="PollDefinition.WordOrder"/> when the row is created; the right-click menu
+    /// lets the user override it on a per-row basis (matches Modbus Poll behaviour).
+    /// </summary>
+    public WordOrder WordOrder
+    {
+        get => _wordOrder;
+        set => Set(ref _wordOrder, value);
     }
 
     /// <summary>Raw 16-bit words backing this row (1 word for 16-bit types, 2 for 32-bit, 4 for 64-bit).</summary>
@@ -117,6 +130,26 @@ public sealed class RegisterRow : INotifyPropertyChanged
         get => _foregroundHex;
         set => Set(ref _foregroundHex, value);
     }
+
+    /// <summary>
+    /// True when this row's wire register is "consumed" by a multi-word data type on a row above
+    /// (e.g. row N is the second word of a Float-32 declared on row N-1). The grid dims these rows
+    /// so the relationship is visible — same affordance as Modbus Poll's greying.
+    /// </summary>
+    public bool IsConsumed
+    {
+        get => _isConsumed;
+        set
+        {
+            if (_isConsumed == value) return;
+            _isConsumed = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsConsumed)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ConsumedOpacity)));
+        }
+    }
+
+    /// <summary>Bindable opacity for the row when consumed (0.35) vs. owning (1.0).</summary>
+    public double ConsumedOpacity => _isConsumed ? 0.35 : 1.0;
 
     /// <summary>
     /// Returns the cell display string. If a value name is mapped to the current raw value, returns the name.
