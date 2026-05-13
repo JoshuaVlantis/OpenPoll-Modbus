@@ -8,7 +8,7 @@ Free, open-source Modbus tooling for engineers — runs natively on Linux, Windo
 
 Modbus has been an open protocol since 1979. Tooling around it should be open too.
 
-> **Status:** v2.3.0 · 221 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`. Feature parity with Modbus Poll / Modbus Slave from modbustools.com (excluding their Windows-only OLE/COM interface — superseded by our HTTP REST + WebSocket API).
+> **Status:** v2.3.0 · 221 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`. Feature parity with Modbus Poll / Modbus Slave from modbustools.com.
 
 ---
 

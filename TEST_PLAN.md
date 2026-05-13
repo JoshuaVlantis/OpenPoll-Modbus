@@ -247,12 +247,6 @@ After diffing our feature surface against the bundled `mbpoll.exe` and `mbslave.
 - **Per-poll font picker** — File → Font…: family + size with live preview
 - **Chart pan/zoom controls** — ZoomMode selector (X/Y/Both/None) + Reset zoom button
 
-## Intentionally not shipped
-
-- **OLE/COM automation** — Modbus Poll's Excel/VBA scripting hook is Windows-only and effectively unmaintainable as cross-platform. Our **HTTP REST + WebSocket API** (with bearer-token auth) is the modern equivalent and works from Python/Node/curl/Excel-via-Power-Query.
-- **Native OS print dialog** — Avalonia 11 has no cross-platform print pipeline. We export to PDF instead (Ctrl+P → Print to PDF…); users hit "Print" on the resulting PDF via their OS.
-- **Mutual-TLS (client cert auth)** — current TLS is server-cert-only. Open if needed.
-
 ---
 
 ## How to report a regression
