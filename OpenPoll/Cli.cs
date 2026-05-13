@@ -128,6 +128,15 @@ TRANSPORT (any subcommand that talks Modbus)
     --parity <p>          none|even|odd|mark|space       (default none)
     --stopbits <p>        one|two|onepointfive           (default one)
 
+  Modbus over UDP (same MBAP frame as TCP, one frame per datagram):
+    --udp <port>          target UDP port on --ip
+  RTU framing over TCP (gateway boxes):
+    --rtu-over-tcp <port> target TCP port on --ip
+  Modbus ASCII over TCP (':' + hex + LRC + CRLF):
+    --ascii <port>        target TCP port on --ip
+  Modbus TCP secured with TLS (server cert NOT validated by default):
+    --tls <port>          target TLS port on --ip
+
   Common:
     --slave <n>           Modbus unit identifier         (default 1)
     --timeout <ms>        connect timeout                (default 2000)
@@ -184,11 +193,23 @@ EXAMPLES
     {
         var serialPort = a.Get("serial");
         var connectTimeout = a.GetInt("timeout", 2000);
+        var mode = serialPort is not null ? ConnectionMode.Serial
+                 : a.Has("udp")          ? ConnectionMode.Udp
+                 : a.Has("rtu-over-tcp") ? ConnectionMode.RtuOverTcp
+                 : a.Has("ascii")        ? ConnectionMode.AsciiOverTcp
+                 : a.Has("tls")          ? ConnectionMode.TcpTls
+                 : ConnectionMode.Tcp;
+        // Some transport flags carry the port; if the user passed --udp 5020 use that as the port.
+        int defaultPort = mode == ConnectionMode.Udp ? a.GetInt("udp", 502)
+                        : mode == ConnectionMode.RtuOverTcp ? a.GetInt("rtu-over-tcp", 502)
+                        : mode == ConnectionMode.AsciiOverTcp ? a.GetInt("ascii", 502)
+                        : mode == ConnectionMode.TcpTls ? a.GetInt("tls", 802)
+                        : a.GetInt("port", 502);
         var def = new PollDefinition
         {
-            ConnectionMode = serialPort is not null ? ConnectionMode.Serial : ConnectionMode.Tcp,
+            ConnectionMode = mode,
             IpAddress = a.Get("ip", "127.0.0.1"),
-            ServerPort = a.GetInt("port", 502),
+            ServerPort = defaultPort,
             SerialPortName = serialPort ?? "",
             BaudRate = a.GetInt("baud", 9600),
             Parity = a.GetEnum("parity", System.IO.Ports.Parity.None),

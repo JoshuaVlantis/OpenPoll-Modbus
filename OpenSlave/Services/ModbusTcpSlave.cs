@@ -1,6 +1,12 @@
 using System;
+using System.IO;
+using System.IO.Ports;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,6 +39,32 @@ public sealed class ModbusTcpSlave : IDisposable
     private Task? _acceptLoop;
     private int _connectedClients;
     private int _commEventCounter;   // increments per non-broadcast request (FC 11 surface)
+
+    private SerialPort? _serial;
+    private CancellationTokenSource? _serialCts;
+    private Task? _serialLoop;
+    public bool SerialRunning => _serial?.IsOpen ?? false;
+
+    private UdpClient? _udp;
+    private CancellationTokenSource? _udpCts;
+    private Task? _udpLoop;
+    public bool UdpRunning => _udp is not null;
+
+    private TcpListener? _rtuTcpListener;
+    private CancellationTokenSource? _rtuTcpCts;
+    private Task? _rtuTcpLoop;
+    public bool RtuOverTcpRunning => _rtuTcpListener is not null;
+
+    private TcpListener? _asciiListener;
+    private CancellationTokenSource? _asciiCts;
+    private Task? _asciiLoop;
+    public bool AsciiOverTcpRunning => _asciiListener is not null;
+
+    private TcpListener? _tlsListener;
+    private X509Certificate2? _tlsCert;
+    private CancellationTokenSource? _tlsCts;
+    private Task? _tlsLoop;
+    public bool TlsRunning => _tlsListener is not null;
 
     public bool[] Coils { get; } = new bool[TableSize];
     public bool[] DiscreteInputs { get; } = new bool[TableSize];
@@ -86,7 +118,497 @@ public sealed class ModbusTcpSlave : IDisposable
         ConnectedClientsChanged?.Invoke(0);
     }
 
-    public void Dispose() => Stop();
+    /// <summary>
+    /// Open <paramref name="portName"/> and start servicing Modbus-RTU requests on it. Coexists
+    /// with the TCP listener — call <see cref="Start"/> too if you want both transports live at
+    /// once. The dispatcher and data tables are shared.
+    /// </summary>
+    public void StartSerial(string portName, int baudRate = 9600, Parity parity = Parity.None, StopBits stopBits = StopBits.One)
+    {
+        if (SerialRunning) throw new InvalidOperationException("Serial slave already running.");
+        _serial = new SerialPort(portName, baudRate, parity, 8, stopBits)
+        {
+            // Inter-byte timeout: 3.5 character times per the Modbus RTU spec. At 9600 baud this is
+            // ~4ms; clamp to 20ms minimum so the OS can deliver bytes reliably.
+            ReadTimeout = Math.Max(20, (int)Math.Ceiling(3500.0 * 11 / baudRate)),
+            WriteTimeout = 1000,
+        };
+        _serial.Open();
+        _serialCts = new CancellationTokenSource();
+        var ct = _serialCts.Token;
+        _serialLoop = Task.Run(() => SerialReadLoop(ct));
+    }
+
+    public void StopSerial()
+    {
+        if (!SerialRunning) return;
+        try { _serialCts?.Cancel(); } catch { }
+        try { _serial?.Close(); } catch { }
+        try { _serialLoop?.Wait(TimeSpan.FromSeconds(1)); } catch { }
+        _serial = null;
+        _serialCts?.Dispose();
+        _serialCts = null;
+        _serialLoop = null;
+    }
+
+    private void SerialReadLoop(CancellationToken ct)
+    {
+        var port = _serial!;
+        var buffer = new byte[MaxAduLength + 4];   // headroom for slave id + CRC
+        while (!ct.IsCancellationRequested && port.IsOpen)
+        {
+            int len = 0;
+            try
+            {
+                int first = port.ReadByte();           // block until first byte (slave id)
+                if (first < 0) continue;
+                buffer[len++] = (byte)first;
+                while (len < buffer.Length)
+                {
+                    try { buffer[len++] = (byte)port.ReadByte(); }
+                    catch (TimeoutException) { break; }   // inter-byte idle ⇒ frame complete
+                }
+            }
+            catch (TimeoutException) { continue; }
+            catch (OperationCanceledException) { return; }
+            catch { return; }
+
+            if (len < 4) continue;                       // SlaveId + FC + CRC = 4 min
+            if (!ModbusCrc.Verify(buffer, 0, len)) continue;
+
+            byte unitId = buffer[0];
+            if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+
+            int pduLen = len - 3;                        // strip SlaveId + CRC
+            byte[] response;
+            try
+            {
+                if (SkipResponses && _rng.Next(10) == 0) continue;
+                response = ReturnExceptionBusy
+                    ? BuildException(buffer[1], 0x06)
+                    : Dispatch(buffer, 1, pduLen);
+            }
+            catch { continue; }
+
+            if (ResponseDelayMs > 0) Thread.Sleep(ResponseDelayMs);
+            if (unitId == 0) continue;                   // broadcast: no response per spec
+
+            var frame = ModbusCrc.WrapRtu(unitId, response);
+            try { port.Write(frame, 0, frame.Length); } catch { return; }
+        }
+    }
+
+    /// <summary>
+    /// Listen for Modbus-over-UDP datagrams on <paramref name="port"/>. UDP framing is the same
+    /// MBAP+PDU as TCP, just one frame per datagram. Coexists with TCP and serial.
+    /// </summary>
+    public void StartUdp(int port)
+    {
+        if (UdpRunning) throw new InvalidOperationException("UDP slave already running.");
+        _udp = new UdpClient(port);
+        _udpCts = new CancellationTokenSource();
+        var ct = _udpCts.Token;
+        _udpLoop = Task.Run(() => UdpLoopAsync(ct));
+    }
+
+    public void StopUdp()
+    {
+        if (!UdpRunning) return;
+        try { _udpCts?.Cancel(); } catch { }
+        try { _udp?.Close(); } catch { }
+        try { _udpLoop?.Wait(TimeSpan.FromSeconds(1)); } catch { }
+        _udp = null;
+        _udpCts?.Dispose();
+        _udpCts = null;
+        _udpLoop = null;
+    }
+
+    private async Task UdpLoopAsync(CancellationToken ct)
+    {
+        var udp = _udp!;
+        while (!ct.IsCancellationRequested)
+        {
+            UdpReceiveResult datagram;
+            try { datagram = await udp.ReceiveAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return; }
+            catch (ObjectDisposedException) { return; }
+            catch { continue; }
+
+            var buf = datagram.Buffer;
+            if (buf.Length < MbapHeaderLength + 1) continue;
+
+            int protocolId = (buf[2] << 8) | buf[3];
+            int length     = (buf[4] << 8) | buf[5];
+            byte unitId    = buf[6];
+            if (protocolId != 0 || length < 2 || length > MaxPduLength + 1) continue;
+            int pduLen = length - 1;
+            if (buf.Length < MbapHeaderLength + pduLen) continue;
+
+            if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+            if (SkipResponses && _rng.Next(10) == 0) continue;
+
+            byte[] resp;
+            try { resp = ReturnExceptionBusy ? BuildException(buf[MbapHeaderLength], 0x06)
+                                             : Dispatch(buf, MbapHeaderLength, pduLen); }
+            catch { continue; }
+
+            if (ResponseDelayMs > 0)
+            {
+                try { await Task.Delay(ResponseDelayMs, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+            }
+
+            int frameLen = resp.Length + 1;
+            var outFrame = new byte[MbapHeaderLength + resp.Length];
+            outFrame[0] = buf[0]; outFrame[1] = buf[1];   // txn id echo
+            outFrame[2] = 0; outFrame[3] = 0;
+            outFrame[4] = (byte)(frameLen >> 8);
+            outFrame[5] = (byte)frameLen;
+            outFrame[6] = unitId;
+            Buffer.BlockCopy(resp, 0, outFrame, MbapHeaderLength, resp.Length);
+
+            try { await udp.SendAsync(outFrame, outFrame.Length, datagram.RemoteEndPoint).ConfigureAwait(false); }
+            catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>Listen for Modbus RTU frames carried over a TCP stream (gateway-style). No MBAP header.</summary>
+    public void StartRtuOverTcp(int port)
+    {
+        if (RtuOverTcpRunning) throw new InvalidOperationException("RTU-over-TCP slave already running.");
+        _rtuTcpListener = new TcpListener(IPAddress.Any, port);
+        _rtuTcpListener.Start();
+        _rtuTcpCts = new CancellationTokenSource();
+        var ct = _rtuTcpCts.Token;
+        _rtuTcpLoop = Task.Run(() => RtuOverTcpAcceptLoopAsync(ct));
+    }
+
+    public void StopRtuOverTcp()
+    {
+        if (!RtuOverTcpRunning) return;
+        try { _rtuTcpCts?.Cancel(); } catch { }
+        try { _rtuTcpListener?.Stop(); } catch { }
+        try { _rtuTcpLoop?.Wait(TimeSpan.FromSeconds(2)); } catch { }
+        _rtuTcpListener = null;
+        _rtuTcpCts?.Dispose(); _rtuTcpCts = null; _rtuTcpLoop = null;
+    }
+
+    private async Task RtuOverTcpAcceptLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            TcpClient client;
+            try { client = await _rtuTcpListener!.AcceptTcpClientAsync(ct).ConfigureAwait(false); }
+            catch { return; }
+            _ = Task.Run(() => HandleRtuOverTcpClientAsync(client, ct), ct);
+        }
+    }
+
+    private async Task HandleRtuOverTcpClientAsync(TcpClient client, CancellationToken ct)
+    {
+        try
+        {
+            client.NoDelay = true;
+            using var stream = client.GetStream();
+            var buffer = new byte[260];
+
+            while (!ct.IsCancellationRequested)
+            {
+                // Read SlaveId + FunctionCode (2 bytes).
+                if (!await ReadExactAsync(stream, buffer, 0, 2, ct).ConfigureAwait(false)) return;
+                byte fc = buffer[1];
+                int totalLen = await DetermineRtuRequestLengthAsync(stream, buffer, fc, ct).ConfigureAwait(false);
+                if (totalLen <= 0 || totalLen > buffer.Length) return;
+                if (!ModbusCrc.Verify(buffer, 0, totalLen)) continue;
+
+                byte unitId = buffer[0];
+                if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+                if (SkipResponses && _rng.Next(10) == 0) continue;
+
+                int pduLen = totalLen - 3;   // strip SlaveId + CRC(2)
+                byte[] resp;
+                try { resp = ReturnExceptionBusy ? BuildException(fc, 0x06) : Dispatch(buffer, 1, pduLen); }
+                catch { continue; }
+
+                if (ResponseDelayMs > 0)
+                {
+                    try { await Task.Delay(ResponseDelayMs, ct).ConfigureAwait(false); }
+                    catch { return; }
+                }
+                if (unitId == 0) continue;
+
+                var frame = ModbusCrc.WrapRtu(unitId, resp);
+                try { await stream.WriteAsync(frame, ct).ConfigureAwait(false); } catch { return; }
+            }
+        }
+        catch { /* connection-lifetime best-effort */ }
+        finally { try { client.Close(); } catch { } }
+    }
+
+    /// <summary>
+    /// Pull additional bytes from the stream to complete a request frame, returning the total
+    /// frame length (SlaveId + PDU + CRC). For fixed-shape FCs the length is known up front; for
+    /// FC15/FC16/FC23 we peek the byteCount field and extend.
+    /// </summary>
+    private async Task<int> DetermineRtuRequestLengthAsync(NetworkStream stream, byte[] buf, byte fc, CancellationToken ct)
+    {
+        switch (fc)
+        {
+            case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
+                return await ReadExactAsync(stream, buf, 2, 6, ct).ConfigureAwait(false) ? 8 : -1;
+            case 0x07: case 0x0B: case 0x0C: case 0x11:
+                return await ReadExactAsync(stream, buf, 2, 2, ct).ConfigureAwait(false) ? 4 : -1;
+            case 0x08:
+                return await ReadExactAsync(stream, buf, 2, 6, ct).ConfigureAwait(false) ? 8 : -1;
+            case 0x16:
+                return await ReadExactAsync(stream, buf, 2, 8, ct).ConfigureAwait(false) ? 10 : -1;
+            case 0x2B:
+                return await ReadExactAsync(stream, buf, 2, 4, ct).ConfigureAwait(false) ? 6 : -1;
+            case 0x0F: case 0x10:
+                // Read addr(2) + qty(2) + byteCount(1). Then byteCount payload bytes + CRC(2).
+                if (!await ReadExactAsync(stream, buf, 2, 5, ct).ConfigureAwait(false)) return -1;
+                int bc = buf[6];
+                if (!await ReadExactAsync(stream, buf, 7, bc + 2, ct).ConfigureAwait(false)) return -1;
+                return 7 + bc + 2;
+            case 0x17:
+                // Read readAddr(2)+readQty(2)+writeAddr(2)+writeQty(2)+byteCount(1) = 9 bytes.
+                if (!await ReadExactAsync(stream, buf, 2, 9, ct).ConfigureAwait(false)) return -1;
+                int bc23 = buf[10];
+                if (!await ReadExactAsync(stream, buf, 11, bc23 + 2, ct).ConfigureAwait(false)) return -1;
+                return 11 + bc23 + 2;
+            default:
+                return -1;
+        }
+    }
+
+    /// <summary>Listen for Modbus ASCII (':' + hex + LRC + CRLF) frames over TCP.</summary>
+    public void StartAsciiOverTcp(int port)
+    {
+        if (AsciiOverTcpRunning) throw new InvalidOperationException("ASCII slave already running.");
+        _asciiListener = new TcpListener(IPAddress.Any, port);
+        _asciiListener.Start();
+        _asciiCts = new CancellationTokenSource();
+        var ct = _asciiCts.Token;
+        _asciiLoop = Task.Run(() => AsciiAcceptLoopAsync(ct));
+    }
+
+    public void StopAsciiOverTcp()
+    {
+        if (!AsciiOverTcpRunning) return;
+        try { _asciiCts?.Cancel(); } catch { }
+        try { _asciiListener?.Stop(); } catch { }
+        try { _asciiLoop?.Wait(TimeSpan.FromSeconds(2)); } catch { }
+        _asciiListener = null;
+        _asciiCts?.Dispose(); _asciiCts = null; _asciiLoop = null;
+    }
+
+    private async Task AsciiAcceptLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            TcpClient client;
+            try { client = await _asciiListener!.AcceptTcpClientAsync(ct).ConfigureAwait(false); }
+            catch { return; }
+            _ = Task.Run(() => HandleAsciiClientAsync(client, ct), ct);
+        }
+    }
+
+    private async Task HandleAsciiClientAsync(TcpClient client, CancellationToken ct)
+    {
+        try
+        {
+            client.NoDelay = true;
+            using var stream = client.GetStream();
+            var buf = new byte[512];
+
+            while (!ct.IsCancellationRequested)
+            {
+                int len = 0;
+                while (true)
+                {
+                    int b;
+                    try { b = stream.ReadByte(); } catch { return; }
+                    if (b < 0) return;
+                    if (len == 0 && b != ':') continue;          // resync on ':' frame start
+                    buf[len++] = (byte)b;
+                    if (len >= 2 && buf[len - 2] == '\r' && buf[len - 1] == '\n') break;
+                    if (len == buf.Length) return;
+                }
+
+                if (!TryParseAsciiFrame(buf, len, out byte unitId, out byte fc, out byte[] pdu))
+                    continue;
+                if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+                if (SkipResponses && _rng.Next(10) == 0) continue;
+
+                // Re-pack pdu into the buffer so Dispatch (which expects buffer[off]=FC) works.
+                var work = new byte[pdu.Length + 1];
+                work[0] = unitId;
+                Buffer.BlockCopy(pdu, 0, work, 1, pdu.Length);
+
+                byte[] resp;
+                try { resp = ReturnExceptionBusy ? BuildException(fc, 0x06) : Dispatch(work, 1, pdu.Length); }
+                catch { continue; }
+
+                if (ResponseDelayMs > 0)
+                {
+                    try { await Task.Delay(ResponseDelayMs, ct).ConfigureAwait(false); }
+                    catch { return; }
+                }
+                if (unitId == 0) continue;
+
+                var frame = WrapAscii(unitId, resp);
+                try { await stream.WriteAsync(frame, ct).ConfigureAwait(false); } catch { return; }
+            }
+        }
+        catch { /* connection lifetime is best-effort */ }
+        finally { try { client.Close(); } catch { } }
+    }
+
+    private static bool TryParseAsciiFrame(byte[] buf, int len, out byte unitId, out byte fc, out byte[] pdu)
+    {
+        unitId = 0; fc = 0; pdu = Array.Empty<byte>();
+        if (len < 7 || buf[0] != ':' || buf[len - 2] != '\r' || buf[len - 1] != '\n') return false;
+
+        var hex = Encoding.ASCII.GetString(buf, 1, len - 3);
+        if (hex.Length % 2 != 0) return false;
+        var bytes = new byte[hex.Length / 2];
+        try { for (int i = 0; i < bytes.Length; i++) bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16); }
+        catch { return false; }
+
+        // LRC = -sum(bytes[0..^1]) (mod 256)
+        byte sum = 0;
+        for (int i = 0; i < bytes.Length - 1; i++) sum += bytes[i];
+        byte expected = (byte)(-(sbyte)sum);
+        if (bytes[^1] != expected) return false;
+
+        unitId = bytes[0];
+        if (bytes.Length < 3) return false;
+        fc = bytes[1];
+        pdu = new byte[bytes.Length - 2];
+        Buffer.BlockCopy(bytes, 1, pdu, 0, pdu.Length);
+        return true;
+    }
+
+    private static byte[] WrapAscii(byte unitId, byte[] pdu)
+    {
+        byte sum = unitId;
+        foreach (var b in pdu) sum += b;
+        byte lrc = (byte)(-(sbyte)sum);
+        var sb = new StringBuilder(":");
+        sb.Append(unitId.ToString("X2"));
+        foreach (var b in pdu) sb.Append(b.ToString("X2"));
+        sb.Append(lrc.ToString("X2"));
+        sb.Append("\r\n");
+        return Encoding.ASCII.GetBytes(sb.ToString());
+    }
+
+    /// <summary>Listen for Modbus TCP wrapped in TLS. Generates a self-signed RSA cert on first call
+    /// if <paramref name="cert"/> is null — fine for local testing but not for production deployments.</summary>
+    public void StartTls(int port, X509Certificate2? cert = null)
+    {
+        if (TlsRunning) throw new InvalidOperationException("TLS slave already running.");
+        _tlsCert = cert ?? GenerateSelfSignedCert();
+        _tlsListener = new TcpListener(IPAddress.Any, port);
+        _tlsListener.Start();
+        _tlsCts = new CancellationTokenSource();
+        var ct = _tlsCts.Token;
+        _tlsLoop = Task.Run(() => TlsAcceptLoopAsync(ct));
+    }
+
+    public void StopTls()
+    {
+        if (!TlsRunning) return;
+        try { _tlsCts?.Cancel(); } catch { }
+        try { _tlsListener?.Stop(); } catch { }
+        try { _tlsLoop?.Wait(TimeSpan.FromSeconds(2)); } catch { }
+        _tlsListener = null;
+        _tlsCert?.Dispose(); _tlsCert = null;
+        _tlsCts?.Dispose(); _tlsCts = null; _tlsLoop = null;
+    }
+
+    private async Task TlsAcceptLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            TcpClient client;
+            try { client = await _tlsListener!.AcceptTcpClientAsync(ct).ConfigureAwait(false); }
+            catch { return; }
+            _ = Task.Run(() => HandleTlsClientAsync(client, ct), ct);
+        }
+    }
+
+    private async Task HandleTlsClientAsync(TcpClient client, CancellationToken ct)
+    {
+        try
+        {
+            client.NoDelay = true;
+            await using var ssl = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
+            try { await ssl.AuthenticateAsServerAsync(_tlsCert!, clientCertificateRequired: false, checkCertificateRevocation: false); }
+            catch { return; }
+
+            var buffer = new byte[MaxAduLength];
+            while (!ct.IsCancellationRequested)
+            {
+                if (!await ReadExactStreamAsync(ssl, buffer, 0, MbapHeaderLength, ct).ConfigureAwait(false)) return;
+                int protocolId = (buffer[2] << 8) | buffer[3];
+                int length     = (buffer[4] << 8) | buffer[5];
+                byte unitId    = buffer[6];
+                if (protocolId != 0 || length < 2 || length > MaxPduLength + 1) return;
+                int pduLen = length - 1;
+                if (!await ReadExactStreamAsync(ssl, buffer, MbapHeaderLength, pduLen, ct).ConfigureAwait(false)) return;
+                if (!IgnoreUnitId && unitId != SlaveId && unitId != 0) continue;
+                if (SkipResponses && _rng.Next(10) == 0) continue;
+
+                byte[] resp;
+                try { resp = ReturnExceptionBusy ? BuildException(buffer[MbapHeaderLength], 0x06)
+                                                 : Dispatch(buffer, MbapHeaderLength, pduLen); }
+                catch { continue; }
+
+                if (ResponseDelayMs > 0)
+                {
+                    try { await Task.Delay(ResponseDelayMs, ct).ConfigureAwait(false); }
+                    catch { return; }
+                }
+
+                int frameLen = resp.Length + 1;
+                var frame = new byte[MbapHeaderLength + resp.Length];
+                frame[0] = buffer[0]; frame[1] = buffer[1];
+                frame[2] = 0; frame[3] = 0;
+                frame[4] = (byte)(frameLen >> 8); frame[5] = (byte)frameLen;
+                frame[6] = unitId;
+                Buffer.BlockCopy(resp, 0, frame, MbapHeaderLength, resp.Length);
+                try { await ssl.WriteAsync(frame, ct).ConfigureAwait(false); } catch { return; }
+            }
+        }
+        catch { /* connection-lifetime best-effort */ }
+        finally { try { client.Close(); } catch { } }
+    }
+
+    private static async Task<bool> ReadExactStreamAsync(Stream s, byte[] buf, int offset, int count, CancellationToken ct)
+    {
+        int total = 0;
+        while (total < count)
+        {
+            int read = await s.ReadAsync(buf.AsMemory(offset + total, count - total), ct).ConfigureAwait(false);
+            if (read == 0) return false;
+            total += read;
+        }
+        return true;
+    }
+
+    /// <summary>Create a short-lived self-signed RSA cert for the TLS listener. Strictly for testing —
+    /// production users should pass their own <see cref="X509Certificate2"/> to <see cref="StartTls"/>.</summary>
+    private static X509Certificate2 GenerateSelfSignedCert()
+    {
+        using var rsa = RSA.Create(2048);
+        var req = new CertificateRequest("CN=OpenSlave", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+        // Round-trip through PFX so the cert carries an exportable private key (required by SslStream).
+        return new X509Certificate2(cert.Export(X509ContentType.Pfx), (string?)null,
+            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.UserKeySet);
+    }
+
+    public void Dispose() { Stop(); StopSerial(); StopUdp(); StopRtuOverTcp(); StopAsciiOverTcp(); StopTls(); }
 
     private async Task AcceptLoopAsync(CancellationToken ct)
     {

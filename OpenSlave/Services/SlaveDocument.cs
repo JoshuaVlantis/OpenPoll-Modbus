@@ -196,10 +196,40 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
         StatusMessage = $"Listening on 0.0.0.0:{Definition.Port}";
     }
 
+    /// <summary>Open a serial port and serve RTU requests on it (coexists with the TCP listener).</summary>
+    public void StartSerial(string portName, int baud, System.IO.Ports.Parity parity, System.IO.Ports.StopBits stopBits)
+    {
+        ApplyDefinitionToSlave();
+        _slave.StartSerial(portName, baud, parity, stopBits);
+        var note = $"+ serial {portName}@{baud} {parity}/{stopBits}";
+        StatusMessage = string.IsNullOrEmpty(StatusMessage) || StatusMessage == "Stopped"
+            ? note.TrimStart('+', ' ')
+            : StatusMessage + " " + note;
+    }
+
+    public void StopSerial() => _slave.StopSerial();
+
+    public void StartUdp(int port) => _slave.StartUdp(port);
+    public void StopUdp() => _slave.StopUdp();
+
+    public void StartRtuOverTcp(int port) => _slave.StartRtuOverTcp(port);
+    public void StopRtuOverTcp() => _slave.StopRtuOverTcp();
+
+    public void StartAsciiOverTcp(int port) => _slave.StartAsciiOverTcp(port);
+    public void StopAsciiOverTcp() => _slave.StopAsciiOverTcp();
+
+    public void StartTls(int port, System.Security.Cryptography.X509Certificates.X509Certificate2? cert = null) => _slave.StartTls(port, cert);
+    public void StopTls() => _slave.StopTls();
+
     public void Stop()
     {
         if (!Running) return;
         _slave.Stop();
+        _slave.StopSerial();
+        _slave.StopUdp();
+        _slave.StopRtuOverTcp();
+        _slave.StopAsciiOverTcp();
+        _slave.StopTls();
         Running = false;
         StatusMessage = "Stopped";
     }

@@ -46,6 +46,8 @@
                         <MenuItem Header="Read Device ID… (FC 43)" Click="OnOpenDeviceId" />
                         <MenuItem Header="Test Center… (raw PDU)" Click="OnOpenTestCenter" />
                         <Separator />
+                        <MenuItem Header="Print to PDF…" Click="OnPrintToPdf" InputGesture="Ctrl+P" />
+                        <Separator />
                         <MenuItem x:Name="CsvLogMenu" Header="Start CSV snapshot (1s)" Click="OnToggleCsvSnapshot" />
                         <MenuItem Header="Reveal log folder…" Click="OnRevealLogFolder" />
                         <Separator />

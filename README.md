@@ -8,7 +8,7 @@ Free, open-source Modbus tooling for engineers — runs natively on Linux, Windo
 
 Modbus has been an open protocol since 1979. Tooling around it should be open too.
 
-> **Status:** v2.2.0 · 201 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`.
+> **Status:** v2.2.0 · 212 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`.
 
 ---
 
@@ -84,6 +84,10 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 
 - **Modbus TCP** (any port; default 502)
 - **Modbus RTU over Serial** (RS-232 / RS-485 / USB serial converters); device picker enumerates `/dev/ttyUSB*`, `/dev/ttyACM*`, `/dev/ttyS*` on Linux
+- **Modbus over UDP** (`--udp <port>`) — same MBAP framing, one datagram per request
+- **Modbus RTU over TCP** (`--rtu-over-tcp <port>`) — gateway boxes from various vendors expose this
+- **Modbus ASCII over TCP** (`--ascii <port>`) — `:` + hex + LRC + CRLF framing
+- **Modbus TCP over TLS** (`--tls <port>`) — RFC 9300; server cert not validated by default
 
 ### Connection settings
 
@@ -120,6 +124,7 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 - **Read Device Identification** — Tools → Read Device ID…: pulls FC 43 objects (vendor/product/version/URL/…) into a grid
 - **CSV snapshot recorder** — Tools → Start CSV snapshot: appends one wide CSV row per second with the live cell values
 - **Live chart export** — chart window has Y-axis limit inputs, Export → PNG, Export → CSV
+- **Print to PDF** — Tools → Print to PDF… (Ctrl+P): A4 multi-page table snapshot via SkiaSharp
 - **Status pill** (idle / connected / error) on every tab
 
 ### Automation
@@ -155,12 +160,20 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 
 Returns Modbus exception codes 01 (Illegal Function), 02 (Illegal Data Address), 03 (Illegal Data Value) per spec, plus 06 (Slave Busy) on demand.
 
-### Transport
+### Transports
 
-- **Modbus TCP server** on any port (default 1502; non-privileged)
-- Spec-compliant 0-indexed addressing (the original EasyModbus-backed slave was 1-indexed by quirk; **breaking change in v2.1.0** — see release notes)
-- Up to **65536 registers/coils** per table
-- Multiple concurrent TCP clients
+OpenSlave serves all six transports concurrently from the same process — flip any combination on from the CLI.
+
+| Transport | CLI flag | Notes |
+|-----------|----------|-------|
+| Modbus TCP | `--port <n>` | default 1502; non-privileged |
+| Modbus RTU over serial | `--serial <port> --baud --parity --stopbits` | CRC-16-MODBUS framing |
+| Modbus over UDP | `--udp <port>` | one MBAP frame per datagram |
+| Modbus RTU over TCP | `--rtu-over-tcp <port>` | gateway-style; no MBAP |
+| Modbus ASCII over TCP | `--ascii <port>` | `:` + hex + LRC + CRLF |
+| Modbus TCP over TLS | `--tls <port>` | self-signed cert auto-generated |
+
+Spec-compliant 0-indexed addressing (the original EasyModbus-backed slave was 1-indexed by quirk; **breaking change in v2.1.0**). Up to **65536 registers/coils** per table. Multiple concurrent clients across every transport.
 
 ### Slave definition (Setup card)
 

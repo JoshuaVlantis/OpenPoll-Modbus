@@ -55,6 +55,20 @@ CORE OPTIONS
   --slave <n>            unit identifier the slave answers   (default 1)
   --ignore-unit-id       accept any unit ID
 
+SERIAL RTU (coexists with TCP — omit --port to skip TCP)
+  --serial <port>        device path, e.g. /dev/ttyUSB0 or COM3
+  --baud <n>             baud rate                            (default 9600)
+  --parity <p>           none|even|odd|mark|space             (default none)
+  --stopbits <p>         one|two|onepointfive                 (default one)
+
+UDP (coexists with TCP and serial)
+  --udp <port>           UDP port for Modbus-over-UDP datagrams
+
+ADDITIONAL TCP TRANSPORTS
+  --rtu-over-tcp <port>  TCP port serving RTU framing (no MBAP, CRC-16 check)
+  --ascii <port>         TCP port serving Modbus ASCII (':' + hex + LRC + CRLF)
+  --tls <port>           TCP port serving Modbus over TLS (self-signed cert auto-generated)
+
 DATA SEEDING
   --hr <pairs>           seed holding registers, e.g. --hr 1=100,2=200
   --coil <pairs>         seed coils, e.g. --coil 1=1,3=1
@@ -166,6 +180,51 @@ EXAMPLES
 
         document.Start();
         if (!quiet) _stdout.WriteLine($"OpenSlave listening on 0.0.0.0:{def.Port} (unit id {def.SlaveId})");
+
+        var serialPort = GetArg(argv, "serial");
+        if (serialPort is not null)
+        {
+            var baud = GetIntArg(argv, "baud", 9600);
+            var parity = Enum.TryParse<System.IO.Ports.Parity>(GetArg(argv, "parity"), true, out var p) ? p : System.IO.Ports.Parity.None;
+            var sb = Enum.TryParse<System.IO.Ports.StopBits>(GetArg(argv, "stopbits"), true, out var s) ? s : System.IO.Ports.StopBits.One;
+            try
+            {
+                document.StartSerial(serialPort, baud, parity, sb);
+                if (!quiet) _stdout.WriteLine($"OpenSlave also serving RTU on {serialPort}@{baud} {parity}/{sb}");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"openslave: serial open failed: {ex.Message}");
+            }
+        }
+
+        var udpPort = GetIntArg(argv, "udp", -1);
+        if (udpPort > 0)
+        {
+            try { document.StartUdp(udpPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving UDP on 0.0.0.0:{udpPort}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: UDP listen failed: {ex.Message}"); }
+        }
+
+        var rtuTcpPort = GetIntArg(argv, "rtu-over-tcp", -1);
+        if (rtuTcpPort > 0)
+        {
+            try { document.StartRtuOverTcp(rtuTcpPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving RTU-over-TCP on 0.0.0.0:{rtuTcpPort}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: RTU-over-TCP listen failed: {ex.Message}"); }
+        }
+
+        var asciiPort = GetIntArg(argv, "ascii", -1);
+        if (asciiPort > 0)
+        {
+            try { document.StartAsciiOverTcp(asciiPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving ASCII on 0.0.0.0:{asciiPort}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: ASCII listen failed: {ex.Message}"); }
+        }
+
+        var tlsPort = GetIntArg(argv, "tls", -1);
+        if (tlsPort > 0)
+        {
+            try { document.StartTls(tlsPort); if (!quiet) _stdout.WriteLine($"OpenSlave also serving TLS on 0.0.0.0:{tlsPort} (self-signed cert)"); }
+            catch (Exception ex) { Console.Error.WriteLine($"openslave: TLS listen failed: {ex.Message}"); }
+        }
 
         using var stop = new ManualResetEventSlim(false);
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Set(); };

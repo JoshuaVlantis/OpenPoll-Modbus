@@ -515,6 +515,32 @@ public partial class HomeView : Window
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
+    private async void OnPrintToPdf(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var pick = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+            {
+                Title = "Print to PDF",
+                DefaultExtension = "pdf",
+                SuggestedFileName = $"{_document.Definition.Name}-{DateTime.Now:yyyyMMdd-HHmmss}.pdf",
+                FileTypeChoices = new[]
+                {
+                    new Avalonia.Platform.Storage.FilePickerFileType("PDF") { Patterns = new[] { "*.pdf" } },
+                },
+            });
+            if (pick is null) return;
+            var rows = _document.Rows.Select(r =>
+                (Address: r.DisplayAddress.ToString(), Value: r.Value ?? "", Type: r.DataType.ToString())
+            ).ToList();
+            PdfExporter.ExportRowsToPdf(pick.Path.LocalPath,
+                title: $"OpenPoll — {_document.Definition.Name}",
+                rows: rows);
+            ApplyStatusVisuals(StatusKind.Ok, $"PDF saved → {pick.Path.LocalPath}");
+        }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
     private CsvSnapshotLogger? _csvLogger;
     private async void OnToggleCsvSnapshot(object? sender, RoutedEventArgs e)
     {

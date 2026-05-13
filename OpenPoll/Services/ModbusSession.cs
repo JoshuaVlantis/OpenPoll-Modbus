@@ -7,6 +7,7 @@ using System.Threading;
 using NModbus;
 using NModbus.IO;
 using OpenPoll.Models;
+using OpenPoll.Services.Transport;
 
 namespace OpenPoll.Services;
 
@@ -26,8 +27,12 @@ public sealed class ModbusSession : IDisposable
     private TcpClient? _tcp;
     private SerialPort? _serial;
     private IModbusMaster? _master;
+    private OpenPoll.Services.Transport.IModbusTransport? _altTransport;   // used for UDP, RtuOverTcp, AsciiOverTcp, TcpTls
     private byte _unitId = 1;
     private PollDefinition? _appliedSettings;
+
+    private bool UsesAltTransport(ConnectionMode m) =>
+        m is ConnectionMode.Udp or ConnectionMode.RtuOverTcp or ConnectionMode.AsciiOverTcp or ConnectionMode.TcpTls;
 
     public bool Connected
     {
@@ -35,6 +40,7 @@ public sealed class ModbusSession : IDisposable
         {
             lock (_lock)
             {
+                if (_altTransport is not null) return _altTransport.Connected;
                 return _master is not null && (_tcp?.Connected ?? _serial?.IsOpen ?? false);
             }
         }
@@ -54,31 +60,54 @@ public sealed class ModbusSession : IDisposable
 
                 Teardown();
 
-                if (settings.ConnectionMode == ConnectionMode.Tcp)
+                switch (settings.ConnectionMode)
                 {
-                    _tcp = new TcpClient();
-                    var connectAr = _tcp.BeginConnect(settings.IpAddress, settings.ServerPort, null, null);
-                    if (!connectAr.AsyncWaitHandle.WaitOne(Math.Max(50, settings.ConnectionTimeoutMs)))
-                    {
-                        Teardown();
-                        return ModbusResult.Fail("Connect timeout");
-                    }
-                    _tcp.EndConnect(connectAr);
-                    _master = _factory.CreateMaster(_tcp);
-                }
-                else
-                {
-                    _serial = new SerialPort(settings.SerialPortName)
-                    {
-                        BaudRate = settings.BaudRate,
-                        Parity = settings.Parity,
-                        StopBits = settings.StopBits,
-                        DataBits = 8,
-                        ReadTimeout = Math.Max(50, settings.ResponseTimeoutMs),
-                        WriteTimeout = Math.Max(50, settings.ResponseTimeoutMs),
-                    };
-                    _serial.Open();
-                    _master = _factory.CreateRtuMaster(new SerialStreamResource(_serial));
+                    case ConnectionMode.Tcp:
+                        _tcp = new TcpClient();
+                        var connectAr = _tcp.BeginConnect(settings.IpAddress, settings.ServerPort, null, null);
+                        if (!connectAr.AsyncWaitHandle.WaitOne(Math.Max(50, settings.ConnectionTimeoutMs)))
+                        {
+                            Teardown();
+                            return ModbusResult.Fail("Connect timeout");
+                        }
+                        _tcp.EndConnect(connectAr);
+                        _master = _factory.CreateMaster(_tcp);
+                        break;
+                    case ConnectionMode.Serial:
+                        _serial = new SerialPort(settings.SerialPortName)
+                        {
+                            BaudRate = settings.BaudRate,
+                            Parity = settings.Parity,
+                            StopBits = settings.StopBits,
+                            DataBits = 8,
+                            ReadTimeout = Math.Max(50, settings.ResponseTimeoutMs),
+                            WriteTimeout = Math.Max(50, settings.ResponseTimeoutMs),
+                        };
+                        _serial.Open();
+                        _master = _factory.CreateRtuMaster(new SerialStreamResource(_serial));
+                        break;
+                    case ConnectionMode.Udp:
+                        _altTransport = new UdpMbapTransport(settings.IpAddress, settings.ServerPort,
+                            Math.Max(50, settings.ResponseTimeoutMs));
+                        break;
+                    case ConnectionMode.RtuOverTcp:
+                    case ConnectionMode.AsciiOverTcp:
+                        _tcp = new TcpClient();
+                        var arRo = _tcp.BeginConnect(settings.IpAddress, settings.ServerPort, null, null);
+                        if (!arRo.AsyncWaitHandle.WaitOne(Math.Max(50, settings.ConnectionTimeoutMs)))
+                        {
+                            Teardown();
+                            return ModbusResult.Fail("Connect timeout");
+                        }
+                        _tcp.EndConnect(arRo);
+                        _altTransport = settings.ConnectionMode == ConnectionMode.RtuOverTcp
+                            ? new RtuOverTcpTransport(_tcp)
+                            : new AsciiOverTcpTransport(_tcp);
+                        break;
+                    case ConnectionMode.TcpTls:
+                        _altTransport = new TlsMbapTransport(settings.IpAddress, settings.ServerPort,
+                            validateCert: false, handshakeTimeoutMs: Math.Max(50, settings.ConnectionTimeoutMs));
+                        break;
                 }
 
                 ApplyTunables(settings);
@@ -105,9 +134,11 @@ public sealed class ModbusSession : IDisposable
     private void Teardown()
     {
         try { _master?.Dispose(); } catch { }
+        try { _altTransport?.Dispose(); } catch { }
         try { _tcp?.Close(); } catch { }
         try { _serial?.Close(); } catch { }
         _master = null;
+        _altTransport = null;
         _tcp = null;
         _serial = null;
     }
@@ -115,6 +146,9 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult<bool[]> ReadCoils(int address, int quantity)
     {
         if (RangeError(address, quantity, 2000, out var err)) return ModbusResult<bool[]>.Fail(err);
+        if (_altTransport is not null)
+            return AltRead("01 ReadCoils", address, quantity, () =>
+                ModbusPdu.ParseReadBits(_altTransport.SendReceive(_unitId, ModbusPdu.BuildReadBits(0x01, address, quantity)), quantity), SummarizeBools);
         return Read("01 ReadCoils", address, quantity,
             m => m.ReadCoils(_unitId, (ushort)address, (ushort)quantity), SummarizeBools);
     }
@@ -122,6 +156,9 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult<bool[]> ReadDiscreteInputs(int address, int quantity)
     {
         if (RangeError(address, quantity, 2000, out var err)) return ModbusResult<bool[]>.Fail(err);
+        if (_altTransport is not null)
+            return AltRead("02 ReadDiscreteInputs", address, quantity, () =>
+                ModbusPdu.ParseReadBits(_altTransport.SendReceive(_unitId, ModbusPdu.BuildReadBits(0x02, address, quantity)), quantity), SummarizeBools);
         return Read("02 ReadDiscreteInputs", address, quantity,
             m => m.ReadInputs(_unitId, (ushort)address, (ushort)quantity), SummarizeBools);
     }
@@ -129,6 +166,9 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult<int[]> ReadHoldingRegisters(int address, int quantity)
     {
         if (RangeError(address, quantity, 125, out var err)) return ModbusResult<int[]>.Fail(err);
+        if (_altTransport is not null)
+            return AltRead("03 ReadHoldingRegisters", address, quantity, () =>
+                ModbusPdu.ParseReadRegisters(_altTransport.SendReceive(_unitId, ModbusPdu.BuildReadRegisters(0x03, address, quantity))), SummarizeInts);
         return Read("03 ReadHoldingRegisters", address, quantity,
             m => m.ReadHoldingRegisters(_unitId, (ushort)address, (ushort)quantity).Select(u => (int)u).ToArray(),
             SummarizeInts);
@@ -137,6 +177,9 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult<int[]> ReadInputRegisters(int address, int quantity)
     {
         if (RangeError(address, quantity, 125, out var err)) return ModbusResult<int[]>.Fail(err);
+        if (_altTransport is not null)
+            return AltRead("04 ReadInputRegisters", address, quantity, () =>
+                ModbusPdu.ParseReadRegisters(_altTransport.SendReceive(_unitId, ModbusPdu.BuildReadRegisters(0x04, address, quantity))), SummarizeInts);
         return Read("04 ReadInputRegisters", address, quantity,
             m => m.ReadInputRegisters(_unitId, (ushort)address, (ushort)quantity).Select(u => (int)u).ToArray(),
             SummarizeInts);
@@ -145,6 +188,12 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult WriteSingleCoil(int address, bool value)
     {
         if (RangeError(address, 1, 1, out var err)) return ModbusResult.Fail(err);
+        if (_altTransport is not null)
+            return AltWrite("05 WriteSingleCoil", address, 1, () =>
+            {
+                var resp = _altTransport.SendReceive(_unitId, ModbusPdu.BuildWriteSingleCoil(address, value));
+                ModbusPdu.ThrowIfException(resp);
+            }, $"= {(value ? "1" : "0")}");
         return Write("05 WriteSingleCoil", address, 1,
             m => m.WriteSingleCoil(_unitId, (ushort)address, value), $"= {(value ? "1" : "0")}");
     }
@@ -152,6 +201,12 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult WriteSingleRegister(int address, int value)
     {
         if (RangeError(address, 1, 1, out var err)) return ModbusResult.Fail(err);
+        if (_altTransport is not null)
+            return AltWrite("06 WriteSingleRegister", address, 1, () =>
+            {
+                var resp = _altTransport.SendReceive(_unitId, ModbusPdu.BuildWriteSingleRegister(address, value));
+                ModbusPdu.ThrowIfException(resp);
+            }, $"= {value}");
         return Write("06 WriteSingleRegister", address, 1,
             m => m.WriteSingleRegister(_unitId, (ushort)address, (ushort)value), $"= {value}");
     }
@@ -159,6 +214,12 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult WriteMultipleCoils(int address, bool[] values)
     {
         if (RangeError(address, values.Length, 1968, out var err)) return ModbusResult.Fail(err);
+        if (_altTransport is not null)
+            return AltWrite("0F WriteMultipleCoils", address, values.Length, () =>
+            {
+                var resp = _altTransport.SendReceive(_unitId, ModbusPdu.BuildWriteMultipleCoils(address, values));
+                ModbusPdu.ThrowIfException(resp);
+            }, SummarizeBools(values));
         return Write("0F WriteMultipleCoils", address, values.Length,
             m => m.WriteMultipleCoils(_unitId, (ushort)address, values), SummarizeBools(values));
     }
@@ -166,9 +227,79 @@ public sealed class ModbusSession : IDisposable
     public ModbusResult WriteMultipleRegisters(int address, int[] values)
     {
         if (RangeError(address, values.Length, 123, out var err)) return ModbusResult.Fail(err);
+        if (_altTransport is not null)
+            return AltWrite("10 WriteMultipleRegisters", address, values.Length, () =>
+            {
+                var resp = _altTransport.SendReceive(_unitId, ModbusPdu.BuildWriteMultipleRegisters(address, values));
+                ModbusPdu.ThrowIfException(resp);
+            }, SummarizeInts(values));
         return Write("10 WriteMultipleRegisters", address, values.Length,
             m => m.WriteMultipleRegisters(_unitId, (ushort)address, values.Select(i => (ushort)i).ToArray()),
             SummarizeInts(values));
+    }
+
+    /// <summary>Shared wrapper for raw-PDU read calls (alt transports). Mirrors <see cref="Read{T}"/>'s
+    /// log/retry semantics but bypasses NModbus.</summary>
+    private ModbusResult<T> AltRead<T>(string label, int addr, int qty, Func<T> op, Func<T, string>? summarize = null)
+    {
+        lock (_lock)
+        {
+            if (_altTransport is null || !Connected)
+            {
+                LogError(label, addr, qty, "Not connected");
+                return ModbusResult<T>.Fail("Not connected");
+            }
+            int attempts = Math.Max(1, 1 + RetriesSetting);
+            string lastError = "Unknown";
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                LogTx(label, addr, qty, attempt > 1 ? $"(retry {attempt - 1})" : "");
+                try
+                {
+                    var v = op();
+                    LogRx(label, addr, qty, summarize?.Invoke(v) ?? "");
+                    return ModbusResult<T>.Ok(v);
+                }
+                catch (Exception ex)
+                {
+                    lastError = Describe(ex);
+                    LogError(label, addr, qty, lastError);
+                    if (attempt == attempts) break;
+                }
+            }
+            return ModbusResult<T>.Fail(lastError);
+        }
+    }
+
+    private ModbusResult AltWrite(string label, int addr, int qty, Action op, string detail = "")
+    {
+        lock (_lock)
+        {
+            if (_altTransport is null || !Connected)
+            {
+                LogError(label, addr, qty, "Not connected");
+                return ModbusResult.Fail("Not connected");
+            }
+            int attempts = Math.Max(1, 1 + RetriesSetting);
+            string lastError = "Unknown";
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                LogTx(label, addr, qty, attempt > 1 ? $"{detail} (retry {attempt - 1})" : detail);
+                try
+                {
+                    op();
+                    LogRx(label, addr, qty, "ack");
+                    return ModbusResult.Ok();
+                }
+                catch (Exception ex)
+                {
+                    lastError = Describe(ex);
+                    LogError(label, addr, qty, lastError);
+                    if (attempt == attempts) break;
+                }
+            }
+            return ModbusResult.Fail(lastError);
+        }
     }
 
     /// <summary>Validates address + quantity for the 16-bit Modbus address space and per-FC quantity limits.</summary>
@@ -585,6 +716,11 @@ public sealed class ModbusSession : IDisposable
             _tcp.ReceiveTimeout = responseTimeout;
             _tcp.SendTimeout = responseTimeout;
         }
+        if (_altTransport is not null)
+        {
+            _altTransport.ReadTimeoutMs = responseTimeout;
+            _altTransport.WriteTimeoutMs = responseTimeout;
+        }
     }
 
     private int RetriesSetting => _appliedSettings?.Retries ?? 0;
@@ -592,17 +728,18 @@ public sealed class ModbusSession : IDisposable
     private static bool SameTransport(PollDefinition a, PollDefinition b)
     {
         if (a.ConnectionMode != b.ConnectionMode) return false;
-        return a.ConnectionMode == ConnectionMode.Tcp
-            ? a.IpAddress == b.IpAddress && a.ServerPort == b.ServerPort
-            : a.SerialPortName == b.SerialPortName
+        return a.ConnectionMode == ConnectionMode.Serial
+            ? a.SerialPortName == b.SerialPortName
                 && a.BaudRate == b.BaudRate
                 && a.Parity == b.Parity
-                && a.StopBits == b.StopBits;
+                && a.StopBits == b.StopBits
+            : a.IpAddress == b.IpAddress && a.ServerPort == b.ServerPort;
     }
 
     private static string Describe(Exception ex) => ex switch
     {
         SlaveException sx => $"Modbus exception {sx.SlaveExceptionCode:X2} ({SlaveExceptionName(sx.SlaveExceptionCode)})",
+        ModbusProtocolException px => px.Message,
         SocketException sox => "Network: " + sox.Message,
         TimeoutException => "Timeout",
         System.IO.IOException io => "I/O error: " + io.Message,
