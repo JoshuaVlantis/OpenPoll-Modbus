@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Collections.Specialized;
 using OpenSlave.Models;
 
 namespace OpenSlave.Services;
@@ -19,6 +20,10 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
     private long _requestCount;
 
     public SlaveDefinition Definition { get; }
+
+    /// <summary>Pattern generators driving register values on each tick (sine/triangle/etc).</summary>
+    public ObservableCollection<Pattern> Patterns { get; } = new();
+    public PatternEngine PatternEngine { get; }
 
     public ObservableCollection<CoilCell> Coils { get; } = new();
     public ObservableCollection<CoilCell> DiscreteInputs { get; } = new();
@@ -47,6 +52,8 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
     public SlaveDocument(SlaveDefinition definition)
     {
         Definition = definition;
+        PatternEngine = new PatternEngine(_slave);
+        Patterns.CollectionChanged += (_, _) => PatternEngine.Apply(Patterns);
         RebuildCells();
         Definition.PropertyChanged += (_, e) =>
         {
@@ -69,6 +76,9 @@ public sealed class SlaveDocument : INotifyPropertyChanged, IDisposable
             ConnectedClientsChanged?.Invoke(n);
         };
     }
+
+    /// <summary>Forward a tick to the pattern engine. Called from the UI sync timer.</summary>
+    public void TickPatterns() => PatternEngine.Tick();
 
     /// <summary>
     /// Rebuild the cell collections to match the configured start/quantity/base.

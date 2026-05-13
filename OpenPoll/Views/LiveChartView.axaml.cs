@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
@@ -47,9 +52,105 @@ public partial class LiveChartView : Window
 
         Chart.Series = BuildSeries();
         Chart.XAxes = BuildXAxes();
+        Chart.YAxes = new[] { new Axis() };   // single Y axis owned by us so we can mutate limits
         _timer.Start();
 
         StatusText.Text = $"Tracking {targetIndexes.Count} row(s) every {(int)_timer.Interval.TotalMilliseconds}ms";
+    }
+
+    private void OnApplyYRange(object? sender, RoutedEventArgs e)
+    {
+        if (Chart.YAxes is not IEnumerable<Axis> axes) return;
+        var yAxis = axes.FirstOrDefault();
+        if (yAxis is null) return;
+        yAxis.MinLimit = ParseDouble(YMinInput.Text);
+        yAxis.MaxLimit = ParseDouble(YMaxInput.Text);
+        StatusText.Text = $"Y range: {Format(yAxis.MinLimit)}..{Format(yAxis.MaxLimit)}";
+    }
+
+    private static double? ParseDouble(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : null;
+    }
+
+    private static string Format(double? v) =>
+        v is null ? "auto" : v.Value.ToString("G6", CultureInfo.InvariantCulture);
+
+    private async void OnExportPng(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var pick = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export chart as PNG",
+                DefaultExtension = "png",
+                SuggestedFileName = "chart.png",
+                FileTypeChoices = new[] { new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } } },
+            });
+            if (pick is null) return;
+
+            var size = new PixelSize(Math.Max(640, (int)Chart.Bounds.Width),
+                                     Math.Max(360, (int)Chart.Bounds.Height));
+            using var bmp = new RenderTargetBitmap(size, new Vector(96, 96));
+            bmp.Render(Chart);
+            await using var stream = await pick.OpenWriteAsync();
+            bmp.Save(stream);
+            StatusText.Text = $"Saved {pick.Path.LocalPath}";
+        }
+        catch (Exception ex) { StatusText.Text = "Export failed: " + ex.Message; }
+    }
+
+    private async void OnExportCsv(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var pick = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export chart data as CSV",
+                DefaultExtension = "csv",
+                SuggestedFileName = "chart.csv",
+                FileTypeChoices = new[] { new FilePickerFileType("CSV") { Patterns = new[] { "*.csv" } } },
+            });
+            if (pick is null) return;
+            var csv = BuildCsv();
+            await using var stream = await pick.OpenWriteAsync();
+            await using var writer = new StreamWriter(stream);
+            await writer.WriteAsync(csv);
+            StatusText.Text = $"Saved {pick.Path.LocalPath}";
+        }
+        catch (Exception ex) { StatusText.Text = "Export failed: " + ex.Message; }
+    }
+
+    private string BuildCsv()
+    {
+        var headers = new List<string> { "timestamp_iso" };
+        for (int i = 0; i < _targetIndexes.Count; i++)
+        {
+            var idx = _targetIndexes[i];
+            headers.Add(idx < _rows.Count ? "addr_" + _rows[idx].Address : "row_" + idx);
+        }
+        // Build a union of all timestamps so multi-series with sparse data still align.
+        var stamps = new SortedSet<DateTime>();
+        foreach (var series in _values)
+            foreach (var p in series)
+                stamps.Add(p.DateTime);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(string.Join(",", headers));
+        foreach (var t in stamps)
+        {
+            sb.Append(t.ToString("o", CultureInfo.InvariantCulture));
+            for (int i = 0; i < _values.Length; i++)
+            {
+                sb.Append(',');
+                var point = _values[i].FirstOrDefault(p => p.DateTime == t);
+                if (point?.Value is double v)
+                    sb.Append(v.ToString(CultureInfo.InvariantCulture));
+            }
+            sb.AppendLine();
+        }
+        return sb.ToString();
     }
 
     private ISeries[] BuildSeries()

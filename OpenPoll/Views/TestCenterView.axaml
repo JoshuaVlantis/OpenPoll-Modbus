@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.TestCenterView"
+        Title="Test Center"
+        Width="720" Height="480"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBaseBrush}">
+    <DockPanel Margin="16">
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Surface1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Spacing="8">
+                <TextBlock Text="PDU (hex, space- or comma-separated)" FontWeight="Bold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox Name="PduInput"
+                         FontFamily="{DynamicResource MonoFont}"
+                         Text="03 00 00 00 01"
+                         AcceptsReturn="False" />
+                <TextBlock Text="Examples:  03 00 00 00 0A (read 10 HRs @ 0)   ·   08 00 00 CA FE (FC 08 echo)"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button Content="Send" Click="OnSend" Classes="primary" />
+                    <Button Content="Clear log" Click="OnClear" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="0,12,0,0"
+                Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Content="Close" Click="OnClose" />
+            </StackPanel>
+        </Border>
+        <TextBox Name="LogOutput"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 FontFamily="{DynamicResource MonoFont}"
+                 VerticalContentAlignment="Top" />
+    </DockPanel>
+</Window>

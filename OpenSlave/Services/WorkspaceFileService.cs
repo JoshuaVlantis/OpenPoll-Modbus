@@ -49,6 +49,7 @@ public static class WorkspaceFileService
         public string? CreatedAt { get; set; }
         public DefinitionDto? Definition { get; set; }
         public TablesDto? Tables { get; set; }
+        public List<PatternDto>? Patterns { get; set; }
 
         public static WorkspaceFile From(SlaveDocument doc) => new()
         {
@@ -57,6 +58,7 @@ public static class WorkspaceFileService
             CreatedAt = DateTimeOffset.UtcNow.ToString("o"),
             Definition = DefinitionDto.From(doc.Definition),
             Tables = TablesDto.From(doc),
+            Patterns = doc.Patterns.Select(PatternDto.From).ToList(),
         };
 
         public SlaveDocument ToDocument()
@@ -64,8 +66,34 @@ public static class WorkspaceFileService
             var def = (Definition ?? new DefinitionDto()).ToModel();
             var doc = new SlaveDocument(def);
             Tables?.ApplyTo(doc);
+            if (Patterns is { Count: > 0 })
+            {
+                foreach (var p in Patterns) doc.Patterns.Add(p.ToModel());
+            }
             return doc;
         }
+    }
+
+    private sealed class PatternDto
+    {
+        public PatternKind Kind { get; set; } = PatternKind.Sine;
+        public PatternTable Table { get; set; } = PatternTable.HoldingRegisters;
+        public int Address { get; set; }
+        public double Amplitude { get; set; } = 100;
+        public double Offset { get; set; }
+        public double PeriodMs { get; set; } = 2000;
+
+        public static PatternDto From(Pattern p) => new()
+        {
+            Kind = p.Kind, Table = p.Table, Address = p.Address,
+            Amplitude = p.Amplitude, Offset = p.Offset, PeriodMs = p.PeriodMs,
+        };
+
+        public Pattern ToModel() => new()
+        {
+            Kind = Kind, Table = Table, Address = Address,
+            Amplitude = Amplitude, Offset = Offset, PeriodMs = PeriodMs,
+        };
     }
 
     private sealed class DefinitionDto

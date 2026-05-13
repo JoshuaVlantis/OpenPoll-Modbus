@@ -19,6 +19,15 @@
                     <ComboBoxItem Content="15 min" />
                     <ComboBoxItem Content="1 h" />
                 </ComboBox>
+                <TextBlock VerticalAlignment="Center" Text="Y:" />
+                <TextBox Name="YMinInput" Width="80" Watermark="auto"
+                         FontFamily="{DynamicResource MonoFont}" />
+                <TextBlock VerticalAlignment="Center" Text=".." />
+                <TextBox Name="YMaxInput" Width="80" Watermark="auto"
+                         FontFamily="{DynamicResource MonoFont}" />
+                <Button Content="Apply Y" Click="OnApplyYRange" />
+                <Button Content="Export PNG…" Click="OnExportPng" />
+                <Button Content="Export CSV…" Click="OnExportCsv" />
             </StackPanel>
         </Border>
 

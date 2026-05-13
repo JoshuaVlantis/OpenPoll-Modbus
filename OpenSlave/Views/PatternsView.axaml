@@ -1,0 +1,72 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenSlave.Views.PatternsView"
+        Title="Patterns"
+        Width="720" Height="460"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBaseBrush}">
+    <DockPanel Margin="16">
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Surface1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="PATTERNS" FontWeight="Bold" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Content="Add" Click="OnAdd" />
+                <Button Content="Remove" Click="OnRemove" />
+                <TextBlock Text="Generators drive register values on every sync tick (~200 ms)"
+                           VerticalAlignment="Center" Margin="20,0,0,0"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           FontStyle="Italic" />
+            </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="0,12,0,0"
+                Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Content="Close" Click="OnClose" />
+            </StackPanel>
+        </Border>
+        <DataGrid Name="Grid"
+                  CanUserSortColumns="False"
+                  AutoGenerateColumns="False"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="KIND" Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox SelectedItem="{ReflectionBinding Kind}" Margin="4,2">
+                                <ComboBoxItem Content="Sine" />
+                                <ComboBoxItem Content="Triangle" />
+                                <ComboBoxItem Content="Square" />
+                                <ComboBoxItem Content="Sawtooth" />
+                                <ComboBoxItem Content="RandomWalk" />
+                            </ComboBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="TABLE" Width="160">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox SelectedItem="{ReflectionBinding Table}" Margin="4,2">
+                                <ComboBoxItem Content="HoldingRegisters" />
+                                <ComboBoxItem Content="InputRegisters" />
+                            </ComboBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="ADDR"     Binding="{ReflectionBinding Address}"   Width="60"  FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="AMP"      Binding="{ReflectionBinding Amplitude}" Width="80"  FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="OFFSET"   Binding="{ReflectionBinding Offset}"    Width="80"  FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="PERIOD ms" Binding="{ReflectionBinding PeriodMs}" Width="*"   FontFamily="{DynamicResource MonoFont}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

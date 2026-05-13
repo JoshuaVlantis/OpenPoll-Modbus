@@ -1,0 +1,54 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.DeviceIdView"
+        Title="Read Device Identification"
+        Width="640" Height="440"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBaseBrush}">
+    <DockPanel Margin="16">
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Surface1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="FC 43" FontWeight="Bold" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <ComboBox Name="CodeBox" Width="180" SelectedIndex="1">
+                    <ComboBoxItem Content="Basic (0..2)"      Tag="1" />
+                    <ComboBoxItem Content="Regular (0..6)"    Tag="2" />
+                    <ComboBoxItem Content="Extended"          Tag="3" />
+                    <ComboBoxItem Content="Specific object…"  Tag="4" />
+                </ComboBox>
+                <TextBlock Text="Object ID" VerticalAlignment="Center" />
+                <TextBox Name="ObjectIdBox" Width="60" Text="0" />
+                <Button Content="Read" Click="OnRead" />
+            </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                Padding="0,12,0,0"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0"
+                Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <TextBlock Name="StatusText" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Content="Close" Click="OnClose" />
+            </StackPanel>
+        </Border>
+        <DataGrid Name="ResultsGrid"
+                  CanUserSortColumns="False"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID"    Binding="{ReflectionBinding IdHex}" Width="80"  FontFamily="{DynamicResource MonoFont}" />
+                <DataGridTextColumn Header="Name"  Binding="{ReflectionBinding Name}"  Width="180" />
+                <DataGridTextColumn Header="Value" Binding="{ReflectionBinding Value}" Width="*"   FontFamily="{DynamicResource MonoFont}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

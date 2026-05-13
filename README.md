@@ -8,7 +8,7 @@ Free, open-source Modbus tooling for engineers — runs natively on Linux, Windo
 
 Modbus has been an open protocol since 1979. Tooling around it should be open too.
 
-> **Status:** v2.1.0 · 149 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`.
+> **Status:** v2.2.0 · 201 unit tests + 15-step docker functional test, all green · Linux / macOS / Windows builds via `dotnet publish`.
 
 ---
 
@@ -71,9 +71,12 @@ dotnet run --project OpenPoll    # master window
 | 06 | Write Single Register | ✅ | broadcast supported |
 | 15 | Write Multiple Coils | ✅ | up to 1968 per request |
 | 16 | Write Multiple Registers | ✅ | up to 123 per request |
-| 22 | Mask Write Register | ⚠️ | emulated as Read-Modify-Write (non-atomic) — NModbus master doesn't expose native FC22 |
+| 22 | Mask Write Register | ✅ | **atomic on TCP** in v2.2 (raw PDU); R-M-W fallback on serial RTU |
 | 23 | Read/Write Multiple Registers | ✅ | atomic write-then-read |
-| 43 / 14 | Read Device Identification | ⚠️ | NModbus exposes it; UI/CLI not yet wired |
+| 43 / 14 | Read Device Identification | ✅ | Tools menu + `openpoll devid` CLI; supports basic/regular/specific |
+| 08 | Diagnostics (sub-fn 0) | ✅ | `openpoll diag` — echo round-trip |
+| 11 | Get Comm Event Counter | ✅ | `openpoll ec` |
+| 17 | Report Server ID | ✅ | `openpoll srvid` |
 
 Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 (Slave device busy)"`.
 
@@ -111,13 +114,20 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 - **Modbus scraper** — sweep registers, search slave IDs, sweep IP range; results to CSV
 - **Traffic monitor** — live TX/RX/error feed with timestamps, function code, address, summary; pause / clear / save (text or CSV) / auto-scroll
 - **Bit editor dialog** (double-click any Binary cell) — toggle 16 individual bits with live decimal/hex feedback
+- **Conditional cell colours** — File → Colour Rules…: per-poll rule list (eq/ne/lt/le/gt/ge/between) drives cell foreground brushes
+- **Manual write dialogs (F5/F6/F7/F8)** — Modbus-Poll-style modal entry for FC 05 / 06 / 15 / 16, prefills from the selected row
+- **Test Center** — Tools → Test Center: hand-craft a raw Modbus PDU, send it, inspect the bytes coming back
+- **Read Device Identification** — Tools → Read Device ID…: pulls FC 43 objects (vendor/product/version/URL/…) into a grid
+- **CSV snapshot recorder** — Tools → Start CSV snapshot: appends one wide CSV row per second with the live cell values
+- **Live chart export** — chart window has Y-axis limit inputs, Export → PNG, Export → CSV
 - **Status pill** (idle / connected / error) on every tab
 
 ### Automation
 
 - **Headless CLI** — every operation scriptable, JSON output for pipelines
-  - `read` / `write` / `mask` (FC 22) / `rw` (FC 23) / `scan` / `serve`
-- **HTTP REST API** (toggle from Tools menu or `serve` subcommand) — `GET /api/polls`, `GET /api/polls/{name}/values`, `POST /api/polls/{name}/write`
+  - `read` / `write` / `mask` (FC 22) / `rw` (FC 23) / `devid` (FC 43) / `diag` (FC 08) / `ec` (FC 11) / `srvid` (FC 17) / `scan` / `serve`
+- **HTTP REST API** (toggle from Tools menu or `serve` subcommand) — `GET /api/polls`, `GET /api/polls/{name}/values`, `POST /api/polls/{name}/write`, **`GET /api/ws`** (WebSocket stream of snapshot deltas)
+- **HTTP API bearer-token auth** — `--http-token <t>` or env `OPENPOLL_HTTP_TOKEN`; constant-time comparison; opt-in (off by default)
 - **JSON workspace format** — diffable, machine-generatable, scriptable
 
 ---
@@ -134,10 +144,14 @@ Modbus exception codes 01..0B are surfaced verbatim, e.g. `"Modbus exception 06 
 | 04 | Read Input Registers | ✅ |
 | 05 | Write Single Coil | ✅ |
 | 06 | Write Single Register | ✅ |
+| 08 | Diagnostics (sub-fn 0) | ✅ |
+| 11 | Get Comm Event Counter | ✅ |
 | 15 | Write Multiple Coils | ✅ |
 | 16 | Write Multiple Registers | ✅ |
+| 17 | Report Server ID | ✅ |
 | 22 | Mask Write Register | ✅ (atomic) |
 | 23 | Read/Write Multiple Registers | ✅ (atomic) |
+| 43 | Read Device Identification | ✅ (configurable vendor/product/version strings) |
 
 Returns Modbus exception codes 01 (Illegal Function), 02 (Illegal Data Address), 03 (Illegal Data Value) per spec, plus 06 (Slave Busy) on demand.
 
@@ -170,7 +184,9 @@ Returns Modbus exception codes 01 (Illegal Function), 02 (Illegal Data Address),
 
 ### Workflow
 
-- **Workspace save/load** — `.openslave` JSON (`Ctrl+O` / `Ctrl+S`); preserves slave definition, all seeded register values, per-cell type/order, and error-simulation settings
+- **Workspace save/load** — `.openslave` JSON (`Ctrl+O` / `Ctrl+S`); preserves slave definition, all seeded register values, per-cell type/order, error-simulation settings, and pattern generators
+- **Multiple slave windows** — `File → New Slave Window` opens another simulator in the same process on the next default port (1502 → 1503 → ...)
+- **Pattern generators** — View → Patterns…: sine / triangle / square / sawtooth / random-walk drive register values on every sync tick (~200 ms)
 - **Live request log** with timestamps; clear / save to file / auto-scroll
 - **Status pill** + connected-client counter + request counter
 - **CLI mode** — full headless slave for CI, scripted scenarios, docker functional tests

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO.Ports;
+using System.Linq;
 
 namespace OpenPoll.Models;
 
@@ -41,6 +43,12 @@ public sealed class PollDefinition
     /// <summary>Word/byte order for multi-register data types (Phase B).</summary>
     public WordOrder WordOrder { get; set; } = WordOrder.BigEndian;
 
+    /// <summary>
+    /// Per-poll conditional colour rules. Evaluated against each row's raw numeric value
+    /// (after scaling) on every poll tick; the first matching rule's colour wins.
+    /// </summary>
+    public List<ColourRule> ColourRules { get; set; } = new();
+
     public PollDefinition Clone() => new()
     {
         Name = Name,
@@ -61,5 +69,6 @@ public sealed class PollDefinition
         PollingRateMs = PollingRateMs,
         DisplayOneIndexed = DisplayOneIndexed,
         WordOrder = WordOrder,
+        ColourRules = ColourRules.Select(r => r.Clone()).ToList(),
     };
 }

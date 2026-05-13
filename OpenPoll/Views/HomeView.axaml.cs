@@ -33,6 +33,39 @@ public partial class HomeView : Window
         ApplyFunctionUiState(_document.Definition.Function);
         UpdateDataSubtitle(_document.Definition);
         RefreshRecentMenu();
+
+        // Modbus-Poll-style write keybindings: F5 single coil, F6 single reg, F7 multi coil, F8 multi reg.
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.F5), Command = new RelayCommand(() => OpenManualWrite(ManualWriteView.WriteFunction.SingleCoil05)) });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.F6), Command = new RelayCommand(() => OpenManualWrite(ManualWriteView.WriteFunction.SingleRegister06)) });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.F7), Command = new RelayCommand(() => OpenManualWrite(ManualWriteView.WriteFunction.MultipleCoils15)) });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.F8), Command = new RelayCommand(() => OpenManualWrite(ManualWriteView.WriteFunction.MultipleRegisters16)) });
+    }
+
+    private async void OpenManualWrite(ManualWriteView.WriteFunction fn)
+    {
+        try
+        {
+            int? prefill = (DataGrid.SelectedItem as RegisterRow)?.Address;
+            var ok = await new ManualWriteView(_document, fn, prefill).ShowDialog<bool>(this);
+            if (ok) ApplyStatusVisuals(StatusKind.Ok, "Write OK");
+        }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
+    private void OnManualWrite05(object? s, RoutedEventArgs e) => OpenManualWrite(ManualWriteView.WriteFunction.SingleCoil05);
+    private void OnManualWrite06(object? s, RoutedEventArgs e) => OpenManualWrite(ManualWriteView.WriteFunction.SingleRegister06);
+    private void OnManualWrite15(object? s, RoutedEventArgs e) => OpenManualWrite(ManualWriteView.WriteFunction.MultipleCoils15);
+    private void OnManualWrite16(object? s, RoutedEventArgs e) => OpenManualWrite(ManualWriteView.WriteFunction.MultipleRegisters16);
+
+    /// <summary>Minimal <see cref="System.Windows.Input.ICommand"/> wrapper for keybinding lambdas.</summary>
+    private sealed class RelayCommand : System.Windows.Input.ICommand
+    {
+        private readonly Action _action;
+        public RelayCommand(Action action) => _action = action;
+        public bool CanExecute(object? parameter) => true;
+        public void Execute(object? parameter) => _action();
+        // CanExecute never changes for these key bindings — the event exists only for interface conformance.
+        public event EventHandler? CanExecuteChanged { add { } remove { } }
     }
 
     private void RefreshRecentMenu()
@@ -419,6 +452,12 @@ public partial class HomeView : Window
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
+    private async void OnOpenColourRules(object? sender, RoutedEventArgs e)
+    {
+        try { await new ColourRulesView(_document.Definition).ShowDialog<bool>(this); }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
     private void OnOpenScraper(object? sender, RoutedEventArgs e)
     {
         try { new ModbusScraperView().Show(this); }
@@ -464,6 +503,42 @@ public partial class HomeView : Window
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
     }
 
+    private async void OnOpenDeviceId(object? sender, RoutedEventArgs e)
+    {
+        try { await new DeviceIdView(_document.Definition).ShowDialog(this); }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
+    private async void OnOpenTestCenter(object? sender, RoutedEventArgs e)
+    {
+        try { await new TestCenterView(_document.Definition).ShowDialog(this); }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
+    private CsvSnapshotLogger? _csvLogger;
+    private async void OnToggleCsvSnapshot(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_csvLogger is { IsRunning: true })
+            {
+                await _csvLogger.StopAsync();
+                ApplyStatusVisuals(StatusKind.Ok, $"CSV snapshot saved → {_csvLogger.Path} ({_csvLogger.RowsWritten} rows)");
+                _csvLogger = null;
+                CsvLogMenu.Header = "Start CSV snapshot (1s)";
+            }
+            else
+            {
+                var path = CsvSnapshotLogger.DefaultPath(_document.Definition.Name);
+                _csvLogger = new CsvSnapshotLogger(_document, intervalMs: 1000, path);
+                _csvLogger.Start();
+                ApplyStatusVisuals(StatusKind.Ok, $"CSV snapshot → {path}");
+                CsvLogMenu.Header = "Stop CSV snapshot";
+            }
+        }
+        catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }
+    }
+
     private void OnRevealLogFolder(object? sender, RoutedEventArgs e)
     {
         FileLogger.RevealLogFolder();
@@ -483,9 +558,11 @@ public partial class HomeView : Window
             else
             {
                 _httpApi ??= new HttpApiHost(_workspace);
+                _httpApi.AuthToken = Environment.GetEnvironmentVariable("OPENPOLL_HTTP_TOKEN");
                 await _httpApi.StartAsync(8080);
                 HttpApiMenu.Header = $"Stop HTTP API ({_httpApi.BaseUrl})";
-                ApplyStatusVisuals(StatusKind.Ok, $"HTTP API on {_httpApi.BaseUrl}");
+                var authNote = string.IsNullOrEmpty(_httpApi.AuthToken) ? "" : " · auth: Bearer";
+                ApplyStatusVisuals(StatusKind.Ok, $"HTTP API on {_httpApi.BaseUrl}{authNote}");
             }
         }
         catch (Exception ex) { ApplyStatusVisuals(StatusKind.Err, ex.Message); }

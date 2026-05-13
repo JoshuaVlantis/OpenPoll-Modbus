@@ -18,6 +18,10 @@ public partial class MainWindow : Window
     private readonly SlaveDocument _document;
     private DispatcherTimer _syncTimer = null!;
 
+    /// <summary>Next default TCP port handed out to a freshly opened slave window. Auto-increments
+    /// so two MainWindows in the same process don't collide on 1502.</summary>
+    private static int _nextDefaultPort = 1502;
+
     public ObservableCollection<string> Log { get; } = new();
 
     public MainWindow()
@@ -26,7 +30,7 @@ public partial class MainWindow : Window
 
         var def = new SlaveDefinition
         {
-            Port = 1502,
+            Port = System.Threading.Interlocked.Increment(ref _nextDefaultPort) - 1,
             SlaveId = 1,
             StartAddress = 0,
             Quantity = 100,
@@ -137,8 +141,23 @@ public partial class MainWindow : Window
 
     private void OnSyncTick()
     {
+        _document.TickPatterns();
         _document.SyncFromSlave();
         StatsText.Text = $"requests: {_document.RequestCount}  ·  clients: {_document.ConnectedClients}";
+    }
+
+    private async void OnOpenPatterns(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var view = new Views.PatternsView(_document.Patterns);
+            await view.ShowDialog(this);
+        }
+        catch (Exception ex)
+        {
+            FileLogger.Error("patterns dialog failed: " + ex);
+            SetStatus(_document.Running, "Error: " + ex.Message);
+        }
     }
 
     // ─────── Cell edits ──────────────────────────────────────────────
@@ -341,6 +360,21 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SetStatus(false, "Save error: " + ex.Message);
+        }
+    }
+
+    private void OnNewWindow(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var fresh = new MainWindow();
+            fresh.Show();
+            Append($"opened new slave window (default port {fresh._document.Definition.Port})");
+        }
+        catch (Exception ex)
+        {
+            FileLogger.Error("new window failed: " + ex);
+            SetStatus(_document.Running, "Error: " + ex.Message);
         }
     }
 

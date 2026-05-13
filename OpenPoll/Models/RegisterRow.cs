@@ -20,6 +20,7 @@ public sealed class RegisterRow : INotifyPropertyChanged
     private int _scalePrecision = 2;
     private bool _scalingEnabled;
     private Dictionary<long, string>? _valueNames;
+    private string? _foregroundHex;
 
     public string Function
     {
@@ -104,6 +105,17 @@ public sealed class RegisterRow : INotifyPropertyChanged
     {
         get => _valueNames;
         set => Set(ref _valueNames, value);
+    }
+
+    /// <summary>
+    /// CSS-style hex string driving the VALUE cell's foreground colour, or null for the
+    /// theme default. Recomputed each poll tick by <see cref="OpenPoll.Services.PollDocument"/>
+    /// from the poll's <see cref="ColourRule"/> list.
+    /// </summary>
+    public string? ForegroundHex
+    {
+        get => _foregroundHex;
+        set => Set(ref _foregroundHex, value);
     }
 
     /// <summary>

@@ -208,23 +208,26 @@ For everything below, start `./dev.sh` (option 6 = server + app together) unless
 
 ---
 
-## Wave 2 backlog (NOT yet implemented)
+## Wave 2 shipped (v2.2.0)
+
+- **FC 22 atomic** on TCP via raw PDU (R-M-W fallback for serial RTU)
+- **FC 43 Read Device Identification** — `openpoll devid` CLI + Tools menu dialog; OpenSlave reports configurable vendor/product/version/URL strings
+- **FC 8 / 11 / 17 diagnostics** — `openpoll diag` / `ec` / `srvid` CLI; OpenSlave maintains a per-request comm-event counter
+- **Conditional cell colours** — per-poll rule list (eq/ne/lt/le/gt/ge/between), colour the VALUE column foreground; persisted in `.openpoll`
+- **Manual write dialogs (F5/F6/F7/F8)** — Modbus-Poll-style modal entry for FC 05/06/15/16; menu items in File menu
+- **Test Center** — Tools → Test Center: hand-craft hex PDU, inspect raw response
+- **CSV snapshot logger** — Tools → Start CSV snapshot: appends one wide row per second to the logs dir
+- **Live chart enhancements** — Y-axis min/max inputs, Export → PNG, Export → CSV
+- **Multiple slave windows** — File → New Slave Window auto-increments the default port (1502, 1503, …)
+- **Pattern generators in OpenSlave** — View → Patterns…: sine / triangle / square / sawtooth / random-walk drive register values
+- **WebSocket live updates** — `/api/ws` endpoint streams JSON snapshots whenever a poll ticks
+- **HTTP API bearer-token auth** — `--http-token <t>` or env `OPENPOLL_HTTP_TOKEN`; constant-time comparison
+
+## Wave 3 backlog (NOT yet implemented)
 
 - **Serial RTU slave** in OpenSlave (only TCP server today). Custom slave needs a parallel `SerialPort` transport.
 - **UDP**, **RTU-over-TCP/UDP**, **Modbus ASCII**, **TLS** transports in both apps.
-- **FC 22 atomic** in OpenPoll master (currently R-M-W emulation; would need a custom NModbus message via `ExecuteCustomMessage`).
-- **FC 43 Read Device Identification**: NModbus exposes it; UI/CLI not yet wired.
-- **FC 8 / 11 / 17 (serial diagnostics)**: not exposed.
-- **Conditional cell colours** (e.g. "if value > 1000, red").
-- **Manual write dialogs** with F5/F6/F7/F8 keybindings (modal write entry — current UX is inline grid edit).
-- **Test Center** (raw PDU/ADU sender for protocol experimentation).
-- **Continuous CSV/Excel logger** for the live grid (today's logger is event-based; this would be value-snapshot-on-interval).
-- **Print** support (cross-platform print on Avalonia).
-- **Real-time chart axis controls + PNG/CSV export**.
-- **Multiple slave windows** in a single OpenSlave instance (today: one slave per process — run multiples).
-- **Simulated value patterns** in OpenSlave (sine, ramp, replay-from-CSV).
-- **WebSocket live updates** in HTTP API (today: REST only).
-- **HTTP API auth**: none. Localhost-only by default.
+- **Print** support (cross-platform print on Avalonia — currently no built-in pipeline; "Export PNG/CSV" from the chart window is the workaround).
 
 ---
 

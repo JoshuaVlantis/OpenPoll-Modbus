@@ -188,6 +188,26 @@ public class ModbusSessionTests : IDisposable
     }
 
     [Fact]
+    public void Fc22_OverTcp_IsAtomic_NoReadModifyWriteOnTheWire()
+    {
+        _slave.HoldingRegisters[200] = 0x00F0;
+        var seenFcs = new System.Collections.Generic.List<byte>();
+        _slave.RequestHandled += ev => { lock (seenFcs) seenFcs.Add(ev.FunctionCode); };
+
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        s.MaskWriteRegister(200, andMask: 0x000F, orMask: 0x0F00).Success.Should().BeTrue();
+
+        // Atomic FC 22: exactly one request, function code 0x16. The non-atomic R-M-W path would
+        // have produced FC 03 + FC 06 instead. Sleep briefly so the slave's RequestHandled fires.
+        System.Threading.Thread.Sleep(40);
+        lock (seenFcs)
+        {
+            seenFcs.Should().ContainSingle().Which.Should().Be(0x16);
+        }
+    }
+
+    [Fact]
     public void Fc23_ReadWriteMultiple_AtomicallyWritesThenReads()
     {
         _slave.HoldingRegisters[200] = 1000;
@@ -214,6 +234,49 @@ public class ModbusSessionTests : IDisposable
         r.Success.Should().BeFalse();
         r.Error.Should().Contain("06");
         r.Error.Should().Contain("busy", Exactly.Once());
+    }
+
+    [Fact]
+    public void Fc43_ReadDeviceIdentification_BasicStream_ReturnsMandatoryObjects()
+    {
+        _slave.DeviceIdentification.VendorName = "OpenPoll Project";
+        _slave.DeviceIdentification.ProductCode = "OpenSlave";
+        _slave.DeviceIdentification.MajorMinorRevision = "9.9.9";
+
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var r = s.ReadDeviceIdentification(ReadDeviceIdCode.Basic);
+        r.Success.Should().BeTrue(r.Error);
+        r.Value.Should().NotBeNull();
+        r.Value!.Objects.Should().HaveCount(3);
+        r.Value.Objects[0].Should().BeEquivalentTo(new { Id = (byte)0x00, Value = "OpenPoll Project" });
+        r.Value.Objects[1].Should().BeEquivalentTo(new { Id = (byte)0x01, Value = "OpenSlave" });
+        r.Value.Objects[2].Should().BeEquivalentTo(new { Id = (byte)0x02, Value = "9.9.9" });
+    }
+
+    [Fact]
+    public void Fc43_ReadDeviceIdentification_Regular_IncludesUrlAndProductName()
+    {
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var r = s.ReadDeviceIdentification(ReadDeviceIdCode.Regular);
+        r.Success.Should().BeTrue(r.Error);
+        r.Value!.Objects.Select(o => o.Id).Should().Contain(new byte[] { 0, 1, 2, 3, 4, 5, 6 });
+    }
+
+    [Fact]
+    public void Fc43_ReadDeviceIdentification_Specific_ReturnsRequestedObject()
+    {
+        _slave.DeviceIdentification.ProductName = "Bench Slave";
+
+        using var s = new ModbusSession();
+        s.Connect(Def()).Success.Should().BeTrue();
+        var r = s.ReadDeviceIdentification(ReadDeviceIdCode.Specific, objectId: 0x04);
+        r.Success.Should().BeTrue(r.Error);
+        r.Value!.Objects.Should().ContainSingle();
+        r.Value.Objects[0].Id.Should().Be(0x04);
+        r.Value.Objects[0].Value.Should().Be("Bench Slave");
+        r.Value.Objects[0].Name.Should().Be("ProductName");
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:OpenPoll.Views"
         x:Class="OpenPoll.Views.HomeView"
         Title="OpenPoll"
         Icon="/Assets/icon.png"
@@ -29,6 +30,12 @@
                         <Separator />
                         <MenuItem Header="Setup…" Click="OnOpenSetup" />
                         <MenuItem Header="Connection Setup…" Click="OnOpenConnectionSetup" />
+                        <MenuItem Header="Colour Rules…" Click="OnOpenColourRules" />
+                        <Separator />
+                        <MenuItem Header="Manual write — Single Coil (FC 05)…"     Click="OnManualWrite05" InputGesture="F5" />
+                        <MenuItem Header="Manual write — Single Register (FC 06)…" Click="OnManualWrite06" InputGesture="F6" />
+                        <MenuItem Header="Manual write — Multi Coils (FC 15)…"     Click="OnManualWrite15" InputGesture="F7" />
+                        <MenuItem Header="Manual write — Multi Registers (FC 16)…" Click="OnManualWrite16" InputGesture="F8" />
                         <Separator />
                         <MenuItem Header="Exit" Click="OnExit" />
                     </MenuItem>
@@ -36,7 +43,10 @@
                         <MenuItem Header="Modbus Scraper…" Click="OnOpenScraper" />
                         <MenuItem Header="Live Chart…" Click="OnOpenChart" />
                         <MenuItem Header="Traffic Monitor…" Click="OnOpenTrafficMonitor" />
+                        <MenuItem Header="Read Device ID… (FC 43)" Click="OnOpenDeviceId" />
+                        <MenuItem Header="Test Center… (raw PDU)" Click="OnOpenTestCenter" />
                         <Separator />
+                        <MenuItem x:Name="CsvLogMenu" Header="Start CSV snapshot (1s)" Click="OnToggleCsvSnapshot" />
                         <MenuItem Header="Reveal log folder…" Click="OnRevealLogFolder" />
                         <Separator />
                         <MenuItem x:Name="HttpApiMenu" Header="Start HTTP API (:8080)" Click="OnToggleHttpApi" />
@@ -233,11 +243,27 @@
                                             IsReadOnly="True" Width="100"
                                             FontFamily="{DynamicResource MonoFont}"
                                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <DataGridTextColumn Header="VALUE"
-                                            Binding="{ReflectionBinding Value}"
-                                            Width="*"
-                                            FontFamily="{DynamicResource MonoFont}"
-                                            FontWeight="Medium" />
+                        <DataGridTemplateColumn Header="VALUE" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{ReflectionBinding Value}"
+                                               FontFamily="{DynamicResource MonoFont}"
+                                               FontWeight="Medium"
+                                               VerticalAlignment="Center"
+                                               Margin="12,0"
+                                               Foreground="{ReflectionBinding ForegroundHex,
+                                                            Converter={x:Static views:HexStringToBrushConverter.Instance}}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{ReflectionBinding Value, Mode=TwoWay}"
+                                             FontFamily="{DynamicResource MonoFont}"
+                                             BorderThickness="0"
+                                             Padding="12,0" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                     <DataGrid.ContextMenu>
                         <ContextMenu Name="ValueContextMenu">

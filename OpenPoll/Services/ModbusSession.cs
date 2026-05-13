@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using NModbus;
 using NModbus.IO;
 using OpenPoll.Models;
@@ -180,18 +182,71 @@ public sealed class ModbusSession : IDisposable
     }
 
     /// <summary>
-    /// FC 22 Mask Write Register. NModbus 3.x doesn't expose this directly, so we emulate
-    /// it as Read-Holding-Register + Write-Single-Register inside our shared lock. This is
-    /// non-atomic on the wire — a write from another master between the read and the write
-    /// will be lost. Most use-cases (single-master polling) are unaffected.
+    /// FC 22 Mask Write Register. NModbus 3.x doesn't surface this in the master interface,
+    /// so we frame the PDU ourselves on TCP for atomic on-the-wire delivery, and fall back to
+    /// Read-Holding + Write-Single (R-M-W) on serial RTU. Atomicity matters when a second
+    /// master could write between the read and the write — TCP users now have that protection.
     /// </summary>
-    public ModbusResult MaskWriteRegister(int address, ushort andMask, ushort orMask) =>
-        Write("16 MaskWriteRegister", address, 1, m =>
+    public ModbusResult MaskWriteRegister(int address, ushort andMask, ushort orMask)
+    {
+        if (RangeError(address, 1, 1, out var err)) return ModbusResult.Fail(err);
+
+        lock (_lock)
+        {
+            if (_master is null || !Connected)
+            {
+                LogError("16 MaskWriteRegister", address, 1, "Not connected");
+                return ModbusResult.Fail("Not connected");
+            }
+
+            // TCP fast-path: send a real FC 22 PDU. Serial RTU still uses the R-M-W emulation
+            // below because raw bytes would need their own CRC + retry handling.
+            if (_appliedSettings?.ConnectionMode == ConnectionMode.Tcp && _tcp is not null)
+            {
+                int attempts = Math.Max(1, 1 + RetriesSetting);
+                string lastError = "Unknown";
+                for (int attempt = 1; attempt <= attempts; attempt++)
+                {
+                    LogTx("16 MaskWriteRegister", address, 1, $"AND={andMask:X4} OR={orMask:X4}{(attempt > 1 ? $" (retry {attempt - 1})" : "")}");
+                    try
+                    {
+                        var pdu = SendRawTcpPdu(new byte[]
+                        {
+                            0x16,
+                            (byte)(address >> 8), (byte)address,
+                            (byte)(andMask >> 8), (byte)andMask,
+                            (byte)(orMask  >> 8), (byte)orMask,
+                        });
+                        if (pdu.Length >= 2 && (pdu[0] & 0x80) != 0)
+                        {
+                            byte ex = pdu[1];
+                            lastError = $"Modbus exception {ex:X2} ({SlaveExceptionName(ex)})";
+                            LogError("16 MaskWriteRegister", address, 1, lastError);
+                            if (attempt == attempts) break;
+                            continue;
+                        }
+                        LogRx("16 MaskWriteRegister", address, 1, "ack (atomic)");
+                        return ModbusResult.Ok();
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = Describe(ex);
+                        LogError("16 MaskWriteRegister", address, 1, lastError);
+                        if (attempt == attempts) break;
+                    }
+                }
+                return ModbusResult.Fail(lastError);
+            }
+        }
+
+        // Serial fallback (or any other transport) — non-atomic R-M-W under the same lock.
+        return Write("16 MaskWriteRegister", address, 1, m =>
         {
             var current = m.ReadHoldingRegisters(_unitId, (ushort)address, 1)[0];
             var result = (ushort)((current & andMask) | (orMask & ~andMask));
             m.WriteSingleRegister(_unitId, (ushort)address, result);
-        }, $"AND={andMask:X4} OR={orMask:X4}");
+        }, $"AND={andMask:X4} OR={orMask:X4} (R-M-W)");
+    }
 
     /// <summary>FC 23 Read/Write Multiple Registers — atomic write-then-read.</summary>
     public ModbusResult<int[]> ReadWriteMultipleRegisters(int writeAddress, int[] writeValues, int readAddress, int readQuantity) =>
@@ -201,6 +256,223 @@ public sealed class ModbusSession : IDisposable
                 (ushort)writeAddress, writeValues.Select(i => (ushort)i).ToArray())
                 .Select(u => (int)u).ToArray(),
             v => $"+ wrote {writeValues.Length} @ {writeAddress} → {SummarizeInts(v)}");
+
+    /// <summary>
+    /// FC 43 / MEI 0x0E Read Device Identification. NModbus 3.x doesn't surface this as a typed
+    /// call, so we frame the PDU ourselves and send it through the active transport's stream.
+    /// TCP only for now; the serial RTU framing path is Wave 3.
+    /// </summary>
+    public ModbusResult<DeviceIdentification> ReadDeviceIdentification(
+        ReadDeviceIdCode code = ReadDeviceIdCode.Basic, byte objectId = 0)
+    {
+        lock (_lock)
+        {
+            if (_master is null || !Connected)
+            {
+                LogError("2B ReadDeviceIdentification", 0, 0, "Not connected");
+                return ModbusResult<DeviceIdentification>.Fail("Not connected");
+            }
+            if (_appliedSettings is null || _appliedSettings.ConnectionMode != ConnectionMode.Tcp || _tcp is null)
+            {
+                return ModbusResult<DeviceIdentification>.Fail("FC 43 over serial RTU not yet supported");
+            }
+
+            int attempts = Math.Max(1, 1 + RetriesSetting);
+            string lastError = "Unknown";
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                LogTx("2B ReadDeviceIdentification", objectId, 0, $"code={(byte)code:X2}{(attempt > 1 ? $" (retry {attempt - 1})" : "")}");
+                try
+                {
+                    var pdu = SendRawTcpPdu(new byte[] { 0x2B, 0x0E, (byte)code, objectId });
+                    if (pdu.Length >= 2 && (pdu[0] & 0x80) != 0)
+                    {
+                        byte ex = pdu[1];
+                        lastError = $"Modbus exception {ex:X2} ({SlaveExceptionName(ex)})";
+                        LogError("2B ReadDeviceIdentification", objectId, 0, lastError);
+                        if (attempt == attempts) break;
+                        continue;
+                    }
+                    var parsed = ParseDeviceIdResponse(pdu);
+                    LogRx("2B ReadDeviceIdentification", objectId, parsed.Objects.Count, $"objs={parsed.Objects.Count}");
+                    return ModbusResult<DeviceIdentification>.Ok(parsed);
+                }
+                catch (Exception ex)
+                {
+                    lastError = Describe(ex);
+                    LogError("2B ReadDeviceIdentification", objectId, 0, lastError);
+                    if (attempt == attempts) break;
+                }
+            }
+            return ModbusResult<DeviceIdentification>.Fail(lastError);
+        }
+    }
+
+    /// <summary>
+    /// FC 08 Diagnostics — sub-function 0x0000 "Return Query Data". The slave should echo back the
+    /// data bytes; returning the same value confirms the link is alive. Useful as a heartbeat.
+    /// </summary>
+    public ModbusResult<ushort> Diagnostic(ushort subFunction = 0, ushort data = 0)
+    {
+        lock (_lock)
+        {
+            if (!Connected || _appliedSettings?.ConnectionMode != ConnectionMode.Tcp || _tcp is null)
+                return ModbusResult<ushort>.Fail("Not connected (TCP only for now)");
+            LogTx("08 Diagnostic", subFunction, 0, $"sub={subFunction:X4} data={data:X4}");
+            try
+            {
+                var pdu = SendRawTcpPdu(new byte[] { 0x08, (byte)(subFunction >> 8), (byte)subFunction, (byte)(data >> 8), (byte)data });
+                if (pdu.Length >= 2 && (pdu[0] & 0x80) != 0)
+                    return Fail<ushort>("08 Diagnostic", pdu);
+                ushort echo = (ushort)((pdu[3] << 8) | pdu[4]);
+                LogRx("08 Diagnostic", subFunction, 0, $"echo={echo:X4}");
+                return ModbusResult<ushort>.Ok(echo);
+            }
+            catch (Exception ex) { return ModbusResult<ushort>.Fail(Describe(ex)); }
+        }
+    }
+
+    /// <summary>FC 11 Get Comm Event Counter — returns status word + event count.</summary>
+    public ModbusResult<(ushort Status, ushort Count)> GetCommEventCounter()
+    {
+        lock (_lock)
+        {
+            if (!Connected || _appliedSettings?.ConnectionMode != ConnectionMode.Tcp || _tcp is null)
+                return ModbusResult<(ushort, ushort)>.Fail("Not connected (TCP only for now)");
+            LogTx("0B GetCommEventCounter", 0, 0);
+            try
+            {
+                var pdu = SendRawTcpPdu(new byte[] { 0x0B });
+                if (pdu.Length >= 2 && (pdu[0] & 0x80) != 0)
+                    return Fail<(ushort, ushort)>("0B GetCommEventCounter", pdu);
+                ushort status = (ushort)((pdu[1] << 8) | pdu[2]);
+                ushort count  = (ushort)((pdu[3] << 8) | pdu[4]);
+                LogRx("0B GetCommEventCounter", 0, 0, $"status={status:X4} count={count}");
+                return ModbusResult<(ushort, ushort)>.Ok((status, count));
+            }
+            catch (Exception ex) { return ModbusResult<(ushort, ushort)>.Fail(Describe(ex)); }
+        }
+    }
+
+    /// <summary>FC 17 Report Server ID — returns server identification bytes + run-indicator.</summary>
+    public ModbusResult<(string Id, bool RunStatus)> ReportServerId()
+    {
+        lock (_lock)
+        {
+            if (!Connected || _appliedSettings?.ConnectionMode != ConnectionMode.Tcp || _tcp is null)
+                return ModbusResult<(string, bool)>.Fail("Not connected (TCP only for now)");
+            LogTx("11 ReportServerId", 0, 0);
+            try
+            {
+                var pdu = SendRawTcpPdu(new byte[] { 0x11 });
+                if (pdu.Length >= 2 && (pdu[0] & 0x80) != 0)
+                    return Fail<(string, bool)>("11 ReportServerId", pdu);
+                int byteCount = pdu[1];
+                if (byteCount < 1 || 2 + byteCount > pdu.Length)
+                    return ModbusResult<(string, bool)>.Fail("Malformed FC 17 response");
+                string id = System.Text.Encoding.ASCII.GetString(pdu, 2, byteCount - 1);
+                bool running = pdu[2 + byteCount - 1] == 0xFF;
+                LogRx("11 ReportServerId", 0, 0, $"id={id} run={running}");
+                return ModbusResult<(string, bool)>.Ok((id, running));
+            }
+            catch (Exception ex) { return ModbusResult<(string, bool)>.Fail(Describe(ex)); }
+        }
+    }
+
+    private ModbusResult<T> Fail<T>(string label, byte[] exceptionPdu)
+    {
+        byte ex = exceptionPdu[1];
+        string err = $"Modbus exception {ex:X2} ({SlaveExceptionName(ex)})";
+        LogError(label, 0, 0, err);
+        return ModbusResult<T>.Fail(err);
+    }
+
+    /// <summary>
+    /// Test Center / raw-PDU escape hatch. Exposes the raw TCP send for diagnostics and protocol
+    /// experimentation. Returns the PDU bytes (without MBAP wrapper). Caller is responsible for
+    /// interpreting the response — exception responses (high bit of FC) come through verbatim.
+    /// </summary>
+    public ModbusResult<byte[]> SendRawPdu(byte[] pdu)
+    {
+        lock (_lock)
+        {
+            if (!Connected || _appliedSettings?.ConnectionMode != ConnectionMode.Tcp || _tcp is null)
+                return ModbusResult<byte[]>.Fail("Not connected (TCP only)");
+            LogTx("?? RawPdu", 0, pdu.Length, BitConverter.ToString(pdu).Replace("-", " "));
+            try
+            {
+                var resp = SendRawTcpPdu(pdu);
+                LogRx("?? RawPdu", 0, resp.Length, BitConverter.ToString(resp).Replace("-", " "));
+                return ModbusResult<byte[]>.Ok(resp);
+            }
+            catch (Exception ex) { return ModbusResult<byte[]>.Fail(Describe(ex)); }
+        }
+    }
+
+    private static int _txnId;
+    private byte[] SendRawTcpPdu(byte[] pdu)
+    {
+        var stream = _tcp!.GetStream();
+        ushort txn = (ushort)Interlocked.Increment(ref _txnId);
+        int length = pdu.Length + 1; // unit id + PDU
+        var frame = new byte[7 + pdu.Length];
+        frame[0] = (byte)(txn >> 8);
+        frame[1] = (byte)txn;
+        frame[2] = 0; frame[3] = 0;
+        frame[4] = (byte)(length >> 8);
+        frame[5] = (byte)length;
+        frame[6] = _unitId;
+        Buffer.BlockCopy(pdu, 0, frame, 7, pdu.Length);
+
+        int readTimeout = _master?.Transport?.ReadTimeout ?? 2000;
+        int writeTimeout = _master?.Transport?.WriteTimeout ?? 2000;
+        stream.WriteTimeout = writeTimeout;
+        stream.ReadTimeout = readTimeout;
+        stream.Write(frame, 0, frame.Length);
+
+        var header = new byte[7];
+        ReadExact(stream, header, 0, 7);
+        int respLen = (header[4] << 8) | header[5];
+        if (respLen < 2 || respLen > 254) throw new InvalidDataException($"Bad MBAP length {respLen}");
+        var rest = new byte[respLen - 1];
+        ReadExact(stream, rest, 0, rest.Length);
+        return rest; // PDU only (header[6] is the unit id)
+    }
+
+    private static void ReadExact(System.IO.Stream s, byte[] buf, int off, int n)
+    {
+        int total = 0;
+        while (total < n)
+        {
+            int read = s.Read(buf, off + total, n - total);
+            if (read == 0) throw new IOException("Stream closed before PDU complete");
+            total += read;
+        }
+    }
+
+    private static DeviceIdentification ParseDeviceIdResponse(byte[] pdu)
+    {
+        // 0:FC 1:MEI 2:Code 3:Conformity 4:MoreFollows 5:NextObjectId 6:NumObjects 7..: objects
+        if (pdu.Length < 7 || pdu[0] != 0x2B || pdu[1] != 0x0E)
+            throw new InvalidDataException("Malformed FC 43 response");
+        byte conformity = pdu[3];
+        bool more = pdu[4] == 0xFF;
+        byte nextId = pdu[5];
+        int n = pdu[6];
+        var objects = new System.Collections.Generic.List<DeviceIdObject>(n);
+        int p = 7;
+        for (int i = 0; i < n; i++)
+        {
+            if (p + 2 > pdu.Length) throw new InvalidDataException("Truncated FC 43 object header");
+            byte id = pdu[p++];
+            byte len = pdu[p++];
+            if (p + len > pdu.Length) throw new InvalidDataException("Truncated FC 43 object value");
+            string val = System.Text.Encoding.UTF8.GetString(pdu, p, len);
+            p += len;
+            objects.Add(new DeviceIdObject(id, val));
+        }
+        return new DeviceIdentification(conformity, more, nextId, objects);
+    }
 
     private ModbusResult<T> Read<T>(string label, int addr, int qty, Func<IModbusMaster, T> op, Func<T, string>? summarize = null)
     {

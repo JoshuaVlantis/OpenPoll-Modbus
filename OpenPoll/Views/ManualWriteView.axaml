@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="OpenPoll.Views.ManualWriteView"
+        Title="Manual Write"
+        Width="480" Height="240"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBaseBrush}"
+        CanResize="False">
+    <DockPanel Margin="20">
+        <Border DockPanel.Dock="Bottom" Padding="0,16,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <TextBlock Name="StatusText" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Content="Cancel" Click="OnCancel" />
+                <Button Content="Send" Click="OnSend" Classes="primary" />
+            </StackPanel>
+        </Border>
+
+        <StackPanel Spacing="12">
+            <TextBlock Name="HeaderText" FontWeight="Bold" FontSize="14"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Address"
+                           VerticalAlignment="Center" Margin="0,0,12,8"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox  Grid.Row="0" Grid.Column="1" Name="AddressInput"
+                          Margin="0,0,0,8"
+                          FontFamily="{DynamicResource MonoFont}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Value(s)"
+                           VerticalAlignment="Center" Margin="0,0,12,0"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox  Grid.Row="1" Grid.Column="1" Name="ValueInput"
+                          FontFamily="{DynamicResource MonoFont}" />
+            </Grid>
+
+            <TextBlock Name="HintText" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </DockPanel>
+</Window>

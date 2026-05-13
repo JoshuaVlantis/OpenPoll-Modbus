@@ -32,6 +32,7 @@ public sealed class ModbusTcpSlave : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _acceptLoop;
     private int _connectedClients;
+    private int _commEventCounter;   // increments per non-broadcast request (FC 11 surface)
 
     public bool[] Coils { get; } = new bool[TableSize];
     public bool[] DiscreteInputs { get; } = new bool[TableSize];
@@ -43,6 +44,12 @@ public sealed class ModbusTcpSlave : IDisposable
     public int ResponseDelayMs { get; set; }
     public bool SkipResponses { get; set; }
     public bool ReturnExceptionBusy { get; set; }
+
+    /// <summary>
+    /// FC 43 / MEI 0x0E device identification objects. Slot 0..6 follow the Modbus spec; users may
+    /// override any of them. Empty strings are reported but trimmed by the response builder.
+    /// </summary>
+    public DeviceIdentificationTable DeviceIdentification { get; } = new();
 
     public int ConnectedClients => Volatile.Read(ref _connectedClients);
     public bool IsRunning { get; private set; }
@@ -177,6 +184,10 @@ public sealed class ModbusTcpSlave : IDisposable
                 0x10 => HandleWriteMultipleRegisters(buffer, pduOffset, pduLen),
                 0x16 => HandleMaskWriteRegister(buffer, pduOffset, pduLen),
                 0x17 => HandleReadWriteMultipleRegisters(buffer, pduOffset, pduLen),
+                0x2B => HandleReadDeviceIdentification(buffer, pduOffset, pduLen),
+                0x08 => HandleDiagnostic(buffer, pduOffset, pduLen),
+                0x0B => HandleGetCommEventCounter(buffer, pduOffset, pduLen),
+                0x11 => HandleReportServerId(buffer, pduOffset, pduLen),
                 _    => BuildException(fc, 0x01), // illegal function
             };
         }
@@ -355,6 +366,125 @@ public sealed class ModbusTcpSlave : IDisposable
             resp[2 + i * 2 + 1] = (byte)w;
         }
         RequestHandled?.Invoke(new RequestEvent(0x17, readAddr, readQty, $"+ wrote {writeQty} @ {writeAddr}"));
+        return resp;
+    }
+
+    private byte[] HandleDiagnostic(byte[] buf, int off, int len)
+    {
+        // PDU: 0x08 SubFn(2) Data(2)  — minimum length 5
+        Require(len == 5, 0x08, 0x03);
+        ushort sub = (ushort)((buf[off + 1] << 8) | buf[off + 2]);
+        // Sub-function 0x0000 (Return Query Data) — echo whatever bytes the client sent.
+        if (sub != 0x0000) throw new ProtocolException(0x01);
+        var resp = new byte[5];
+        Buffer.BlockCopy(buf, off, resp, 0, 5);
+        Interlocked.Increment(ref _commEventCounter);
+        RequestHandled?.Invoke(new RequestEvent(0x08, 0, 0, $"sub={sub:X4} echo"));
+        return resp;
+    }
+
+    private byte[] HandleGetCommEventCounter(byte[] buf, int off, int len)
+    {
+        // PDU: 0x0B  (request has no payload)
+        Require(len == 1, 0x0B, 0x03);
+        var counter = (ushort)Volatile.Read(ref _commEventCounter);
+        // Status word 0xFFFF means "previous command still active"; we always return idle (0x0000).
+        var resp = new byte[]
+        {
+            0x0B,
+            0x00, 0x00,
+            (byte)(counter >> 8), (byte)counter,
+        };
+        Interlocked.Increment(ref _commEventCounter);
+        RequestHandled?.Invoke(new RequestEvent(0x0B, 0, 0, $"counter={counter}"));
+        return resp;
+    }
+
+    private byte[] HandleReportServerId(byte[] buf, int off, int len)
+    {
+        // PDU: 0x11  (request has no payload)
+        Require(len == 1, 0x11, 0x03);
+        var id = System.Text.Encoding.ASCII.GetBytes(DeviceIdentification.ProductName ?? "OpenSlave");
+        // ByteCount + ServerId(N) + RunIndicator (0xFF = ON, 0x00 = OFF). We're always ON when serving.
+        var resp = new byte[2 + id.Length + 1];
+        resp[0] = 0x11;
+        resp[1] = (byte)(id.Length + 1);
+        Buffer.BlockCopy(id, 0, resp, 2, id.Length);
+        resp[^1] = 0xFF;
+        Interlocked.Increment(ref _commEventCounter);
+        RequestHandled?.Invoke(new RequestEvent(0x11, 0, 0, $"server-id"));
+        return resp;
+    }
+
+    private byte[] HandleReadDeviceIdentification(byte[] buf, int off, int len)
+    {
+        // PDU: 0x2B 0x0E ReadDevIdCode ObjectId
+        Require(len == 4, 0x2B, 0x03);
+        byte meiType = buf[off + 1];
+        byte code    = buf[off + 2];
+        byte objectId = buf[off + 3];
+        if (meiType != 0x0E) throw new ProtocolException(0x01);   // illegal function for unknown MEI
+        if (code < 0x01 || code > 0x04) throw new ProtocolException(0x03);
+
+        var (maxId, conformity) = code switch
+        {
+            0x01 => ((byte)0x02, (byte)0x81),  // basic + individual access
+            0x02 => ((byte)0x06, (byte)0x82),  // regular + individual access
+            0x03 => ((byte)0x06, (byte)0x83),  // extended (we have no vendor objects, return same set)
+            0x04 => ((byte)0xFF, (byte)0x83),  // individual: caller picks the id
+            _    => ((byte)0x00, (byte)0x00),
+        };
+
+        // Stream access (0x01..0x03): return every present object with id in [objectId, maxId].
+        // Individual access (0x04): return just objectId, or exception 0x02 if absent/empty.
+        var picks = new System.Collections.Generic.List<(byte Id, byte[] Bytes)>();
+        if (code == 0x04)
+        {
+            var value = DeviceIdentification.GetUtf8(objectId);
+            if (value.Length == 0) throw new ProtocolException(0x02);
+            picks.Add((objectId, value));
+        }
+        else
+        {
+            for (byte id = objectId; id <= maxId; id++)
+            {
+                var value = DeviceIdentification.GetUtf8(id);
+                if (value.Length > 0) picks.Add((id, value));
+            }
+        }
+
+        // PDU header: FC, MEI, Code, Conformity, MoreFollows, NextObjectId, NumberOfObjects = 7 bytes,
+        // plus 2 bytes (id + length) per object plus the value bytes.
+        const int PduBudget = 253;
+        var body = new System.Collections.Generic.List<byte>(64);
+        byte moreFollows = 0x00;
+        byte nextId = 0x00;
+        int written = 0;
+        foreach (var (id, value) in picks)
+        {
+            int objBytes = 2 + value.Length;
+            if (7 + body.Count + objBytes > PduBudget)
+            {
+                moreFollows = 0xFF;
+                nextId = id;
+                break;
+            }
+            body.Add(id);
+            body.Add((byte)value.Length);
+            body.AddRange(value);
+            written++;
+        }
+
+        var resp = new byte[7 + body.Count];
+        resp[0] = 0x2B;
+        resp[1] = 0x0E;
+        resp[2] = code;
+        resp[3] = conformity;
+        resp[4] = moreFollows;
+        resp[5] = nextId;
+        resp[6] = (byte)written;
+        for (int i = 0; i < body.Count; i++) resp[7 + i] = body[i];
+        RequestHandled?.Invoke(new RequestEvent(0x2B, objectId, written, $"code={code:X2}"));
         return resp;
     }
 

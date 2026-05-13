@@ -167,4 +167,55 @@ public sealed class ModbusTcpSlaveTests : IDisposable
         resp[7].Should().Be(0x83);
         resp[8].Should().Be(0x06);
     }
+
+    [Fact]
+    public void Fc43_BasicStream_ReturnsMandatoryObjects()
+    {
+        _slave.DeviceIdentification.VendorName = "OpenPoll Project";
+        _slave.DeviceIdentification.ProductCode = "OpenSlave";
+        _slave.DeviceIdentification.MajorMinorRevision = "2.1.0";
+
+        // PDU: 0x2B 0x0E code=0x01 (basic) objectId=0x00 → len=4 + unit = 5
+        var frame = new byte[] { 0, 1, 0, 0, 0, 5, 1, 0x2B, 0x0E, 0x01, 0x00 };
+        var resp = Send(frame);
+
+        // Response PDU starts at offset 7. 0x2B 0x0E 0x01 conformity moreFollows nextId numObjs ...
+        resp[7].Should().Be(0x2B);
+        resp[8].Should().Be(0x0E);
+        resp[9].Should().Be(0x01);          // code echoed
+        resp[10].Should().Be(0x81);         // basic + individual access support
+        resp[11].Should().Be(0x00);         // more follows = no
+        resp[13].Should().Be(0x03);         // 3 mandatory objects
+        // First object id=0 length=16 "OpenPoll Project"
+        resp[14].Should().Be(0x00);
+        resp[15].Should().Be((byte)"OpenPoll Project".Length);
+    }
+
+    [Fact]
+    public void Fc43_Individual_ReturnsRequestedObjectOnly()
+    {
+        _slave.DeviceIdentification.ModelName = "Bench";
+
+        // PDU: 0x2B 0x0E code=0x04 (individual) objectId=0x05
+        var frame = new byte[] { 0, 1, 0, 0, 0, 5, 1, 0x2B, 0x0E, 0x04, 0x05 };
+        var resp = Send(frame);
+        resp[7].Should().Be(0x2B);
+        resp[8].Should().Be(0x0E);
+        resp[9].Should().Be(0x04);
+        resp[13].Should().Be(0x01);   // exactly one object
+        resp[14].Should().Be(0x05);   // ModelName
+        resp[15].Should().Be(0x05);   // length 5
+        System.Text.Encoding.UTF8.GetString(resp, 16, 5).Should().Be("Bench");
+    }
+
+    [Fact]
+    public void Fc43_UnknownObjectIndividual_ReturnsException02()
+    {
+        _slave.DeviceIdentification.ModelName = "";
+        // Request individual object 0x05 with model name cleared → exception 02
+        var frame = new byte[] { 0, 1, 0, 0, 0, 5, 1, 0x2B, 0x0E, 0x04, 0x05 };
+        var resp = Send(frame);
+        resp[7].Should().Be(0xAB);   // 0x2B | 0x80
+        resp[8].Should().Be(0x02);
+    }
 }

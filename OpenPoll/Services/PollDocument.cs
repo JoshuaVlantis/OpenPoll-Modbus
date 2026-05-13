@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -228,6 +229,7 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
             row.DisplayAddress = wire + (def.DisplayOneIndexed ? 1 : 0);
             row.RawBool = values[i];
             row.Value = row.ApplyDisplayTransform(ValueFormatter.FormatCoil(values[i]));
+            ApplyColourRule(row, def.ColourRules, values[i] ? 1.0 : 0.0);
         }
         PollCount++;
         SetStatus(PollStatus.Connected, "Connected");
@@ -256,9 +258,38 @@ public sealed class PollDocument : INotifyPropertyChanged, IDisposable
 
             row.RawWords = packed;
             row.Value = row.ApplyDisplayTransform(ValueFormatter.FormatRegister(packed, row.DataType, order));
+            ApplyColourRule(row, def.ColourRules, row.Value);
         }
         PollCount++;
         SetStatus(PollStatus.Connected, "Connected");
+    }
+
+    /// <summary>
+    /// Evaluate the poll's colour rules against the (already-formatted) value string and update
+    /// <see cref="RegisterRow.ForegroundHex"/>. Strings that don't parse as numbers (hex display,
+    /// value-name labels) opt out of colouring.
+    /// </summary>
+    private static void ApplyColourRule(RegisterRow row, System.Collections.Generic.List<ColourRule>? rules, string display)
+    {
+        if (rules is null || rules.Count == 0) { if (row.ForegroundHex is not null) row.ForegroundHex = null; return; }
+        var v = ParseNumeric(display);
+        ApplyColourRule(row, rules, v);
+    }
+
+    private static void ApplyColourRule(RegisterRow row, System.Collections.Generic.List<ColourRule>? rules, double v)
+    {
+        if (rules is null || rules.Count == 0) { if (row.ForegroundHex is not null) row.ForegroundHex = null; return; }
+        var hex = ColourRule.FirstMatch(rules, v);
+        if (row.ForegroundHex != hex) row.ForegroundHex = hex;
+    }
+
+    private static double ParseNumeric(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return double.NaN;
+        if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            && long.TryParse(s.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hex)) return hex;
+        if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)) return d;
+        return double.NaN; // value-name labels / binary strings opt out
     }
 
     public void EnsureRowSlots()

@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -25,6 +28,12 @@ public sealed class HttpApiHost : IDisposable
     public bool IsRunning => _task is { IsCompleted: false };
     public int Port { get; private set; }
     public string BaseUrl => $"http://localhost:{Port}";
+
+    /// <summary>
+    /// Optional bearer token. When non-empty, every request to `/api/*` must either send
+    /// `Authorization: Bearer &lt;token&gt;` or pass `?token=&lt;token&gt;` in the query string.
+    /// </summary>
+    public string? AuthToken { get; set; }
 
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -84,7 +93,23 @@ public sealed class HttpApiHost : IDisposable
 
             if (method == "OPTIONS") { res.StatusCode = 204; return; }
 
+            // Auth gate — only enforced for /api/* paths so the root HTML cheat sheet
+            // stays reachable without a token (it's just docs).
+            if (!string.IsNullOrEmpty(AuthToken) && path.StartsWith("/api/", StringComparison.Ordinal)
+                && !IsAuthorized(req, AuthToken))
+            {
+                res.StatusCode = 401;
+                res.AddHeader("WWW-Authenticate", "Bearer realm=\"openpoll\"");
+                await WriteJsonAsync(res, new { ok = false, error = "Unauthorized" });
+                return;
+            }
+
             // Routes
+            if (path == "/api/ws" && req.IsWebSocketRequest)
+            {
+                await HandleWebSocketAsync(ctx);
+                return;
+            }
             if (path == "/api/polls" && method == "GET")
             {
                 await WriteJsonAsync(res, _workspace.Documents.Select(SummarizeDoc).ToArray());
@@ -191,7 +216,110 @@ public sealed class HttpApiHost : IDisposable
         await res.OutputStream.WriteAsync(bytes);
     }
 
+    /// <summary>
+    /// Check a request against a configured bearer token. Accepts either an
+    /// `Authorization: Bearer &lt;token&gt;` header or a `?token=&lt;token&gt;` query parameter
+    /// (the latter for quick curl tests; production callers should prefer the header).
+    /// </summary>
+    private static bool IsAuthorized(HttpListenerRequest req, string token)
+    {
+        var header = req.Headers["Authorization"];
+        if (!string.IsNullOrEmpty(header) && header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            var provided = header.AsSpan(7).Trim().ToString();
+            return ConstantTimeEquals(provided, token);
+        }
+        var query = req.QueryString["token"];
+        if (!string.IsNullOrEmpty(query))
+        {
+            return ConstantTimeEquals(query, token);
+        }
+        return false;
+    }
+
+    private static bool ConstantTimeEquals(string a, string b)
+    {
+        if (a.Length != b.Length) return false;
+        int diff = 0;
+        for (int i = 0; i < a.Length; i++) diff |= a[i] ^ b[i];
+        return diff == 0;
+    }
+
     public void Dispose() => _ = StopAsync();
+
+    /// <summary>
+    /// WebSocket endpoint at /api/ws. Subscribes to every open poll document and pushes a JSON
+    /// snapshot of its current row values whenever the poll completes a tick. Clients receive
+    /// roughly real-time updates without polling REST.
+    /// </summary>
+    private async Task HandleWebSocketAsync(HttpListenerContext ctx)
+    {
+        WebSocketContext wsCtx;
+        try { wsCtx = await ctx.AcceptWebSocketAsync(subProtocol: null); }
+        catch (Exception ex)
+        {
+            ctx.Response.StatusCode = 500;
+            try { ctx.Response.Close(); } catch { }
+            FileLogger.Error("WebSocket accept failed: " + ex.Message);
+            return;
+        }
+
+        var ws = wsCtx.WebSocket;
+        var outbox = System.Threading.Channels.Channel.CreateUnbounded<string>(
+            new System.Threading.Channels.UnboundedChannelOptions { SingleReader = true });
+
+        // Subscribe to every existing document and any added/removed later. Filter on PollCount
+        // change so we emit at the natural poll cadence rather than per cell.
+        var attached = new Dictionary<PollDocument, PropertyChangedEventHandler>();
+        void Attach(PollDocument d)
+        {
+            void Handler(object? _, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == nameof(PollDocument.PollCount))
+                    outbox.Writer.TryWrite(BuildSnapshot(d));
+            }
+            d.PropertyChanged += Handler;
+            attached[d] = Handler;
+            outbox.Writer.TryWrite(BuildSnapshot(d));
+        }
+        foreach (var d in _workspace.Documents) Attach(d);
+
+        try
+        {
+            await foreach (var msg in outbox.Reader.ReadAllAsync().ConfigureAwait(false))
+            {
+                if (ws.State != WebSocketState.Open) break;
+                var bytes = Encoding.UTF8.GetBytes(msg);
+                await ws.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex) { FileLogger.Error("WebSocket send loop ended: " + ex.Message); }
+        finally
+        {
+            foreach (var (d, h) in attached) d.PropertyChanged -= h;
+            try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None); } catch { }
+            try { ws.Dispose(); } catch { }
+        }
+    }
+
+    private static string BuildSnapshot(PollDocument d)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            type = "snapshot",
+            name = d.Definition.Name,
+            pollCount = d.PollCount,
+            status = d.Status.ToString(),
+            statusMessage = d.StatusMessage,
+            rows = d.Rows.Select(r => new
+            {
+                address = r.Address,
+                displayAddress = r.DisplayAddress,
+                value = r.Value,
+                foregroundHex = r.ForegroundHex,
+            }).ToArray(),
+        }, Json);
+    }
 
     private sealed class WriteRequest
     {

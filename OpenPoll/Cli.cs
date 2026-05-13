@@ -29,7 +29,8 @@ public static class Cli
     };
 
     public static bool IsKnownCommand(string? arg) =>
-        arg is "read" or "write" or "rw" or "mask" or "scan" or "serve" or "help" or "--help" or "-h";
+        arg is "read" or "write" or "rw" or "mask" or "devid" or "diag" or "ec" or "srvid"
+        or "scan" or "serve" or "help" or "--help" or "-h";
 
     private static TextWriter _stdout = Console.Out;
 
@@ -45,6 +46,10 @@ public static class Cli
                 "write"  => RunWrite(args[1..]).GetAwaiter().GetResult(),
                 "rw"     => RunReadWrite(args[1..]).GetAwaiter().GetResult(),
                 "mask"   => RunMask(args[1..]).GetAwaiter().GetResult(),
+                "devid"  => RunDeviceId(args[1..]).GetAwaiter().GetResult(),
+                "diag"   => RunDiag(args[1..]).GetAwaiter().GetResult(),
+                "ec"     => RunEventCounter(args[1..]).GetAwaiter().GetResult(),
+                "srvid"  => RunServerId(args[1..]).GetAwaiter().GetResult(),
                 "scan"   => RunScan(args[1..]).GetAwaiter().GetResult(),
                 "serve"  => RunServe(args[1..]).GetAwaiter().GetResult(),
                 "help" or "--help" or "-h" => PrintUsage(),
@@ -103,6 +108,10 @@ COMMANDS
   write   one-shot write of a single coil or register (FC 05/06/15/16)
   rw      atomic FC 23 Read/Write Multiple Registers
   mask    FC 22 Mask Write Register: result = (cur AND and) OR (or AND NOT and)
+  devid   FC 43 Read Device Identification (vendor, product, revision, ...)
+  diag    FC 08 Diagnostics (sub-function 0 = echo round-trip)
+  ec      FC 11 Get Comm Event Counter
+  srvid   FC 17 Report Server ID
   scan    sweep registers, slave IDs, or IP range; one JSON line per result
   serve   start the HTTP API (and nothing else) until SIGINT
   help    this message
@@ -142,6 +151,10 @@ TRANSPORT (any subcommand that talks Modbus)
     --and-mask <hex|int>   AND mask (e.g. 0x00FF or 255)
     --or-mask  <hex|int>   OR  mask
 
+  devid SPECIFIC (FC 43)
+    --code <1|2|3|4>       1 basic (default) · 2 regular · 3 extended · 4 specific
+    --object <id>          starting object id (default 0; required for --code 4)
+
   scan SPECIFIC
     --type <kind>      ip | id | registers
     --base <ip>        for ip scan (e.g. 192.168.1.0)
@@ -152,6 +165,8 @@ TRANSPORT (any subcommand that talks Modbus)
 
   serve SPECIFIC
     --http <port>      HTTP API port (default 8080)
+    --http-token <t>   require `Authorization: Bearer <t>` on /api/* (also reads
+                       OPENPOLL_HTTP_TOKEN env var; empty / unset = no auth)
 
 EXAMPLES
   openpoll read --ip 127.0.0.1 --port 1502 --address 1 --amount 5 --function 03
@@ -159,6 +174,7 @@ EXAMPLES
   openpoll write --serial /dev/ttyUSB0 --baud 19200 --parity even --address 0 --value 99
   openpoll mask --ip 127.0.0.1 --port 1502 --address 0 --and-mask 0x00FF --or-mask 0x1100
   openpoll rw   --ip 127.0.0.1 --port 1502 --read-address 0 --read-amount 4 --address 10 --value 7,8,9
+  openpoll devid --ip 127.0.0.1 --port 1502 --code 2
   openpoll scan --type ip --base 192.168.1.0 --port 502 --timeout 500
 ");
         return 0;
@@ -361,6 +377,83 @@ EXAMPLES
         return Task.FromResult(result.Success ? 0 : 1);
     }
 
+    // ─────── diag / ec / srvid (FC 08 / 11 / 17) ────────────────────────
+
+    private static Task<int> RunDiag(string[] argv)
+    {
+        var a = new Args(argv);
+        var def = DefFromArgs(a);
+        ushort sub  = (ushort)a.GetInt("sub", 0);
+        ushort data = (ushort)a.GetInt("data", 0);
+        using var s = new ModbusSession();
+        var c = s.Connect(def);
+        if (!c.Success) { Emit(new { ok = false, stage = "connect", error = c.Error }); return Task.FromResult(1); }
+        var r = s.Diagnostic(sub, data);
+        Emit(new { ok = r.Success, function = "Diagnostic", subFunction = $"0x{sub:X4}", echo = r.Success ? $"0x{r.Value:X4}" : null, error = r.Error });
+        return Task.FromResult(r.Success ? 0 : 1);
+    }
+
+    private static Task<int> RunEventCounter(string[] argv)
+    {
+        var a = new Args(argv);
+        var def = DefFromArgs(a);
+        using var s = new ModbusSession();
+        var c = s.Connect(def);
+        if (!c.Success) { Emit(new { ok = false, stage = "connect", error = c.Error }); return Task.FromResult(1); }
+        var r = s.GetCommEventCounter();
+        Emit(new { ok = r.Success, function = "GetCommEventCounter", status = r.Success ? $"0x{r.Value.Status:X4}" : null, count = r.Success ? r.Value.Count : 0, error = r.Error });
+        return Task.FromResult(r.Success ? 0 : 1);
+    }
+
+    private static Task<int> RunServerId(string[] argv)
+    {
+        var a = new Args(argv);
+        var def = DefFromArgs(a);
+        using var s = new ModbusSession();
+        var c = s.Connect(def);
+        if (!c.Success) { Emit(new { ok = false, stage = "connect", error = c.Error }); return Task.FromResult(1); }
+        var r = s.ReportServerId();
+        Emit(new { ok = r.Success, function = "ReportServerId", id = r.Success ? r.Value.Id : null, runStatus = r.Success ? r.Value.RunStatus : false, error = r.Error });
+        return Task.FromResult(r.Success ? 0 : 1);
+    }
+
+    // ─────── devid (FC 43) ───────────────────────────────────────────────
+
+    private static Task<int> RunDeviceId(string[] argv)
+    {
+        var a = new Args(argv);
+        var def = DefFromArgs(a);
+        var code = (ReadDeviceIdCode)a.GetInt("code", (int)ReadDeviceIdCode.Basic);
+        var objectId = (byte)a.GetInt("object", 0);
+
+        using var session = new ModbusSession();
+        var connect = session.Connect(def);
+        if (!connect.Success)
+        {
+            Emit(new { ok = false, stage = "connect", error = connect.Error });
+            return Task.FromResult(1);
+        }
+
+        var result = session.ReadDeviceIdentification(code, objectId);
+        if (!result.Success)
+        {
+            Emit(new { ok = false, function = "ReadDeviceIdentification", code = code.ToString(), error = result.Error });
+            return Task.FromResult(1);
+        }
+        var di = result.Value!;
+        Emit(new
+        {
+            ok = true,
+            function = "ReadDeviceIdentification",
+            code = code.ToString(),
+            conformity = $"0x{di.ConformityLevel:X2}",
+            moreFollows = di.MoreFollows,
+            nextObjectId = di.NextObjectId,
+            objects = di.Objects.Select(o => new { id = o.Id, name = o.Name, value = o.Value }).ToArray(),
+        });
+        return Task.FromResult(0);
+    }
+
     private static ushort ParseUshort(string raw)
     {
         var s = raw.Trim();
@@ -476,14 +569,17 @@ EXAMPLES
     {
         var a = new Args(argv);
         var port = a.GetInt("http", 8080);
+        var token = a.Get("http-token") ?? Environment.GetEnvironmentVariable("OPENPOLL_HTTP_TOKEN");
 
         var workspace = new Workspace();
         // Seed with a default poll so /api/polls isn't empty
         workspace.AddNew(new PollDefinition { Name = "default" });
 
-        using var host = new HttpApiHost(workspace);
+        using var host = new HttpApiHost(workspace) { AuthToken = token };
         await host.StartAsync(port);
         _stdout.WriteLine($"OpenPoll HTTP API listening on http://localhost:{port}/api/polls");
+        if (!string.IsNullOrEmpty(token))
+            _stdout.WriteLine("Bearer auth enabled — requests must include `Authorization: Bearer <token>` or `?token=...`.");
         _stdout.WriteLine("Ctrl+C to stop.");
 
         using var stop = new ManualResetEventSlim(false);
